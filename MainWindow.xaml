@@ -1,0 +1,265 @@
+<Window x:Class="DriveCrawl_Win32_App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DriveCrawl" Height="720" Width="1100"
+        MinHeight="520" MinWidth="800"
+        Background="#0F1117"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+
+        <SolidColorBrush x:Key="P1Green"  Color="#22C55E"/>
+        <SolidColorBrush x:Key="P2Blue"   Color="#3B82F6"/>
+        <SolidColorBrush x:Key="P3Yellow" Color="#EAB308"/>
+        <SolidColorBrush x:Key="P4Orange" Color="#F97316"/>
+        <SolidColorBrush x:Key="PDefault" Color="#6B7280"/>
+
+        <DataTemplate x:Key="PriorityDot">
+            <Ellipse Width="12" Height="12"
+                     HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Ellipse.Style>
+                    <Style TargetType="Ellipse">
+                        <Setter Property="Fill" Value="{StaticResource PDefault}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Priority}" Value="1">
+                                <Setter Property="Fill" Value="{StaticResource P1Green}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Priority}" Value="2">
+                                <Setter Property="Fill" Value="{StaticResource P2Blue}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Priority}" Value="3">
+                                <Setter Property="Fill" Value="{StaticResource P3Yellow}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Priority}" Value="4">
+                                <Setter Property="Fill" Value="{StaticResource P4Orange}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Ellipse.Style>
+            </Ellipse>
+        </DataTemplate>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background"               Value="Transparent"/>
+            <Setter Property="Foreground"               Value="#E8ECF4"/>
+            <Setter Property="BorderThickness"          Value="0"/>
+            <Setter Property="GridLinesVisibility"      Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#1E2536"/>
+            <Setter Property="RowBackground"            Value="Transparent"/>
+            <Setter Property="AlternatingRowBackground" Value="#12161F"/>
+            <Setter Property="ColumnHeaderHeight"       Value="36"/>
+            <Setter Property="RowHeight"                Value="38"/>
+            <Setter Property="SelectionMode"            Value="Single"/>
+            <Setter Property="SelectionUnit"            Value="FullRow"/>
+            <Setter Property="AutoGenerateColumns"      Value="False"/>
+            <Setter Property="CanUserAddRows"           Value="False"/>
+            <Setter Property="CanUserDeleteRows"        Value="False"/>
+            <Setter Property="CanUserReorderColumns"    Value="False"/>
+            <Setter Property="IsReadOnly"               Value="True"/>
+            <Setter Property="FontSize"                 Value="13"/>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#252D42"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#1D3250"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background"  Value="Transparent"/>
+                    <Setter Property="Foreground"  Value="#E8ECF4"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background"      Value="#161B27"/>
+            <Setter Property="Foreground"      Value="#7A8499"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush"     Value="#2A3048"/>
+            <Setter Property="FontSize"        Value="11"/>
+            <Setter Property="FontWeight"      Value="SemiBold"/>
+            <Setter Property="Padding"         Value="10,0"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#161B27"
+                BorderBrush="#2A3048" BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="DriveCrawl" FontSize="17" FontWeight="Bold"
+                               Foreground="#E8ECF4" VerticalAlignment="Center"/>
+                    <Border Background="#1E2536" CornerRadius="3"
+                            Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text=".NET 10" FontSize="10"
+                                   Foreground="#4A9EFF" FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+
+                <TextBox x:Name="TxtSearch"
+                         Grid.Column="1"
+                         Margin="20,0"
+                         Height="36"
+                         FontSize="13"
+                         Foreground="#E8ECF4"
+                         Background="#1E2536"
+                         BorderBrush="#2A3048"
+                         BorderThickness="1"
+                         Padding="10,0"
+                         VerticalContentAlignment="Center"
+                         CaretBrush="#4A9EFF"
+                         KeyDown="TxtSearch_KeyDown"/>
+
+                <Button x:Name="BtnSearch"
+                        Grid.Column="2"
+                        Width="100" Height="36"
+                        Content="Buscar"
+                        FontSize="13" FontWeight="SemiBold"
+                        Foreground="White"
+                        Background="#4A9EFF"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Click="BtnSearch_Click"/>
+            </Grid>
+        </Border>
+
+        <ProgressBar x:Name="SearchProgress"
+                     Grid.Row="1"
+                     Height="3"
+                     Foreground="#4A9EFF"
+                     Background="#1E2536"
+                     BorderThickness="0"
+                     IsIndeterminate="True"
+                     Visibility="Collapsed"/>
+
+        <Border Grid.Row="2" Background="#0F1117">
+            <DataGrid x:Name="ResultsGrid"
+                      MouseDoubleClick="ResultsGrid_MouseDoubleClick">
+                <DataGrid.Columns>
+
+                    <DataGridTemplateColumn Header="" Width="40"
+                                            CellTemplate="{StaticResource PriorityDot}"/>
+
+                    <DataGridTextColumn Header="NOMBRE" Width="220"
+                                        Binding="{Binding FileName}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"        Value="#E8ECF4"/>
+                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn x:Name="ColSize"
+                                        Header="TAMANO" Width="90"
+                                        Binding="{Binding FileSize}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"          Value="#7A8499"/>
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment"   Value="Center"/>
+                                <Setter Property="FontFamily"          Value="Consolas"/>
+                                <Setter Property="FontSize"            Value="12"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="EXT" Width="60"
+                                        Binding="{Binding Extension}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"        Value="#4A9EFF"/>
+                                <Setter Property="FontFamily"        Value="Consolas"/>
+                                <Setter Property="FontSize"          Value="12"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="RUTA COMPLETA" Width="*"
+                                        Binding="{Binding FullPath}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"        Value="#4A5568"/>
+                                <Setter Property="FontFamily"        Value="Consolas"/>
+                                <Setter Property="FontSize"          Value="11"/>
+                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="2" x:Name="EmptyState"
+                IsHitTestVisible="False" Background="Transparent">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock x:Name="EmptyLabel"
+                           Text="Ingresa un termino y presiona Buscar"
+                           FontSize="14" Foreground="#3A4460"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="3" Background="#161B27"
+                BorderBrush="#2A3048" BorderThickness="0,1,0,0"
+                Padding="16,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusLabel"
+                           Text="Listo."
+                           Foreground="#4A5568" FontSize="12"
+                           VerticalAlignment="Center"/>
+                <TextBlock x:Name="ResultCount"
+                           Grid.Column="1"
+                           Text="0 resultados"
+                           Foreground="#4A9EFF" FontSize="12"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>
