@@ -21,12 +21,6 @@ using DriveCrawl_Win32_App.Services;
 
 namespace DriveCrawl_Win32_App
 {
-    // ---------------------------------------------------------------
-    // FileModel must implement INotifyPropertyChanged so Thumbnail
-    // can be set after the row is already visible in the grid.
-    // Add this partial class extension to or add these members directly
-    // to your existing FileModel.cs if you prefer.
-    // ---------------------------------------------------------------
     public class FileViewModel : INotifyPropertyChanged
     {
         public int    Id        { get; set; }
@@ -60,9 +54,6 @@ namespace DriveCrawl_Win32_App
         };
     }
 
-    // ---------------------------------------------------------------
-    // FileSizeConverter
-    // ---------------------------------------------------------------
     public class FileSizeConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -81,10 +72,6 @@ namespace DriveCrawl_Win32_App
             => throw new NotImplementedException();
     }
 
-    // ---------------------------------------------------------------
-    // Windows Shell thumbnail extractor (no NuGet required)
-    // Uses IShellItemImageFactory to same source Explorer uses
-    // ---------------------------------------------------------------
     internal static class ShellThumbnail
     {
         [ComImport, Guid("bcc18b79-ba16-442f-80c4-8a59c30c463b"),
@@ -132,9 +119,6 @@ namespace DriveCrawl_Win32_App
         }
     }
 
-    // ---------------------------------------------------------------
-    // MainWindow
-    // ---------------------------------------------------------------
     public partial class MainWindow : Window
     {
         private readonly ObservableCollection<FileViewModel> _results = new();
