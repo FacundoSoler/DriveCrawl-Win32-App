@@ -39,6 +39,17 @@
             </Ellipse>
         </DataTemplate>
 
+        <!-- Thumbnail column: shows Image if Thumbnail is set, grey rect if null -->
+        <DataTemplate x:Key="ThumbnailTemplate">
+            <Grid Width="80" Height="54">
+                <Rectangle Fill="#1E2536" RadiusX="3" RadiusY="3"/>
+                <Image Source="{Binding Thumbnail}"
+                       Width="80" Height="54"
+                       Stretch="UniformToFill"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+            </Grid>
+        </DataTemplate>
+
         <Style TargetType="DataGrid">
             <Setter Property="Background"               Value="Transparent"/>
             <Setter Property="Foreground"               Value="#E8ECF4"/>
@@ -103,6 +114,13 @@
             <Setter Property="Padding"         Value="10,0"/>
         </Style>
 
+        <Style x:Key="DarkCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground"               Value="#A0AABB"/>
+            <Setter Property="FontSize"                 Value="12"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor"                   Value="Hand"/>
+        </Style>
+
     </Window.Resources>
 
     <Grid>
@@ -113,6 +131,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- HEADER -->
         <Border Grid.Row="0" Background="#161B27"
                 BorderBrush="#2A3048" BorderThickness="0,0,0,1"
                 Padding="16,10">
@@ -121,8 +140,11 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Title -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="DriveCrawl" FontSize="17" FontWeight="Bold"
                                Foreground="#E8ECF4" VerticalAlignment="Center"/>
@@ -133,9 +155,10 @@
                     </Border>
                 </StackPanel>
 
+                <!-- Search box -->
                 <TextBox x:Name="TxtSearch"
                          Grid.Column="1"
-                         Margin="20,0"
+                         Margin="20,0,12,0"
                          Height="36"
                          FontSize="13"
                          Foreground="#E8ECF4"
@@ -147,8 +170,25 @@
                          CaretBrush="#4A9EFF"
                          KeyDown="TxtSearch_KeyDown"/>
 
+                <!-- Duplicates checkbox -->
+                <CheckBox x:Name="ChkDuplicates"
+                          Grid.Column="2"
+                          Style="{StaticResource DarkCheckBox}"
+                          Content="Solo duplicados"
+                          Margin="0,0,16,0"
+                          VerticalAlignment="Center"/>
+
+                <!-- Thumbnails checkbox -->
+                <CheckBox x:Name="ChkThumbnails"
+                          Grid.Column="3"
+                          Style="{StaticResource DarkCheckBox}"
+                          Content="Show Thumbnails"
+                          Margin="0,0,14,0"
+                          VerticalAlignment="Center"/>
+
+                <!-- Search button -->
                 <Button x:Name="BtnSearch"
-                        Grid.Column="2"
+                        Grid.Column="4"
                         Width="100" Height="36"
                         Content="Buscar"
                         FontSize="13" FontWeight="SemiBold"
@@ -160,6 +200,7 @@
             </Grid>
         </Border>
 
+        <!-- PROGRESS BAR -->
         <ProgressBar x:Name="SearchProgress"
                      Grid.Row="1"
                      Height="3"
@@ -169,6 +210,7 @@
                      IsIndeterminate="True"
                      Visibility="Collapsed"/>
 
+        <!-- RESULTS -->
         <Border Grid.Row="2" Background="#0F1117">
             <DataGrid x:Name="ResultsGrid"
                       MouseDoubleClick="ResultsGrid_MouseDoubleClick">
@@ -176,6 +218,12 @@
 
                     <DataGridTemplateColumn Header="" Width="40"
                                             CellTemplate="{StaticResource PriorityDot}"/>
+
+                    <!-- Thumbnail column - visibility toggled from code-behind -->
+                    <DataGridTemplateColumn x:Name="ColThumbnail"
+                                            Header="PREV" Width="96"
+                                            CellTemplate="{StaticResource ThumbnailTemplate}"
+                                            Visibility="Collapsed"/>
 
                     <DataGridTextColumn Header="NOMBRE" Width="220"
                                         Binding="{Binding FileName}">
@@ -231,6 +279,7 @@
             </DataGrid>
         </Border>
 
+        <!-- EMPTY STATE -->
         <Border Grid.Row="2" x:Name="EmptyState"
                 IsHitTestVisible="False" Background="Transparent">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -241,6 +290,7 @@
             </StackPanel>
         </Border>
 
+        <!-- STATUS BAR -->
         <Border Grid.Row="3" Background="#161B27"
                 BorderBrush="#2A3048" BorderThickness="0,1,0,0"
                 Padding="16,6">
@@ -248,16 +298,30 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusLabel"
                            Text="Listo."
                            Foreground="#4A5568" FontSize="12"
                            VerticalAlignment="Center"/>
-                <TextBlock x:Name="ResultCount"
+                <TextBlock x:Name="ThumbnailCounter"
                            Grid.Column="1"
+                           Foreground="#4A9EFF" FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="20,0,0,0"
+                           Visibility="Collapsed"/>
+                <TextBlock x:Name="TotalSizeLabel"
+                           Grid.Column="2"
+                           Foreground="#4A5568" FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="20,0,0,0"/>
+                <TextBlock x:Name="ResultCount"
+                           Grid.Column="3"
                            Text="0 resultados"
                            Foreground="#4A9EFF" FontSize="12"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center"
+                           Margin="20,0,0,0"/>
             </Grid>
         </Border>
 
