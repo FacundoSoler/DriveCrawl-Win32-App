@@ -122,6 +122,7 @@ namespace DriveCrawl_Win32_App
         private CancellationTokenSource? _thumbCts;
         private int _thumbnailsLoaded;
         private int _totalThumbnailsToLoad;
+        private bool _isOperationInProgress;
 
         // Thumbnail size matching Windows 11 "Large Icons"
         private const int ThumbW = 160;
@@ -136,16 +137,33 @@ namespace DriveCrawl_Win32_App
 
         private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter) StartSearch();
+            if (e.Key == Key.Enter && !_isOperationInProgress) StartSearch();
         }
 
         private void BtnSearch_Click(object sender, RoutedEventArgs e)
-            => StartSearch();
+        {
+            if (!_isOperationInProgress) StartSearch();
+        }
+
+        private void BtnStop_Click(object sender, RoutedEventArgs e)
+        {
+            CancelAllOperations();
+        }
 
         private void ResultsGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ResultsGrid.SelectedItem is FileViewModel file)
-                OpenContainingFolder(file.FullPath);
+                OpenFileWithDefaultProgram(file.FullPath);
+        }
+
+        private void CancelAllOperations()
+        {
+            _thumbCts?.Cancel();
+            _cts?.Cancel();
+            _isOperationInProgress = false;
+            ShowStopButton(false);
+            SetBusy(false);
+            StatusLabel.Text = "Operación cancelada.";
         }
 
         private async void StartSearch()
@@ -154,15 +172,15 @@ namespace DriveCrawl_Win32_App
             bool dupsOnly   = ChkDuplicates.IsChecked == true;
             bool showThumbs = ChkThumbnails.IsChecked == true;
 
-            // Empty query with checkbox unchecked: scan everything (original behavior)
-            // Empty query is always allowed to SearchEngine uses "*" pattern when empty
-
             // Cancel previous search and thumbnail loads
             _thumbCts?.Cancel();
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
+
+            _isOperationInProgress = true;
+            ShowStopButton(true);
 
             _results.Clear();
             SetBusy(true);
@@ -189,22 +207,45 @@ namespace DriveCrawl_Win32_App
 
                 var sw = Stopwatch.StartNew();
 
-                // Run search off UI thread to empty query becomes "*" inside SearchEngine
-                List<FileModel> found = await Task.Run(() => _search.Search(folders, query), token);
+                // Run search off UI thread with cancellation support
+                List<FileModel> found = await Task.Run(() => _search.Search(folders, query, token), token);
 
-                // Duplicates filter to runs on background thread too
+                token.ThrowIfCancellationRequested();
+
+                // Duplicates filter runs on background thread too
                 if (dupsOnly)
                     found = await Task.Run(() => FilterDuplicates(found), token);
 
+                token.ThrowIfCancellationRequested();
+
+                // Sort by file size (largest first) on background thread
+                found = await Task.Run(() => found.OrderByDescending(f => f.FileSize).ToList(), token);
+
                 sw.Stop();
 
-                // Project to FileViewModel (supports lazy Thumbnail property)
-                var viewModels = found.Select(FileViewModel.FromModel).ToList();
+                // Project to FileViewModel on background thread
+                var viewModels = await Task.Run(
+                    () => found.Select(FileViewModel.FromModel).ToList(),
+                    token
+                );
 
-                foreach (var vm in viewModels)
+                token.ThrowIfCancellationRequested();
+
+                // Add results to UI in batches to avoid blocking
+                // Batch size: add 100 items at a time, then yield to UI
+                const int batchSize = 100;
+                for (int i = 0; i < viewModels.Count; i += batchSize)
                 {
                     token.ThrowIfCancellationRequested();
-                    _results.Add(vm);
+                    
+                    var batch = viewModels.Skip(i).Take(batchSize).ToList();
+                    foreach (var vm in batch)
+                    {
+                        _results.Add(vm);
+                    }
+                    
+                    // Yield to UI thread to keep responsive
+                    await Task.Delay(1, token);
                 }
 
                 int count = _results.Count;
@@ -225,7 +266,7 @@ namespace DriveCrawl_Win32_App
 
                 // Load thumbnails lazily AFTER results are shown
                 if (showThumbs && count > 0)
-                    _ = LoadThumbnailsAsync(viewModels);
+                    await LoadThumbnailsAsync(viewModels, token);
             }
             catch (OperationCanceledException)
             {
@@ -238,48 +279,62 @@ namespace DriveCrawl_Win32_App
             }
             finally
             {
+                _isOperationInProgress = false;
+                ShowStopButton(false);
                 SetBusy(false);
             }
         }
 
         // Loads thumbnails one by one in background, sets them on the ViewModel.
+        // Loads from largest to smallest files (already sorted in viewModels).
         // INotifyPropertyChanged makes the grid update each cell as it arrives.
-        private async Task LoadThumbnailsAsync(List<FileViewModel> items)
+        private async Task LoadThumbnailsAsync(List<FileViewModel> items, CancellationToken searchToken)
         {
             _thumbCts?.Cancel();
             _thumbCts?.Dispose();
             _thumbCts = new CancellationTokenSource();
-            var token = _thumbCts.Token;
+
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(searchToken, _thumbCts.Token);
+            var token = linkedCts.Token;
 
             _thumbnailsLoaded = 0;
             _totalThumbnailsToLoad = items.Count;
             ThumbnailCounter.Visibility = Visibility.Visible;
             UpdateThumbnailCounter();
 
-            // Semaphore limits concurrent shell calls (avoids hammering slow drives)
-            var sem = new SemaphoreSlim(4);
-
-            var tasks = items.Select(async vm =>
+            // This is the key: it manages the 4-task limit natively without flooding
+            var options = new ParallelOptions
             {
-                await sem.WaitAsync(token);
-                try
-                {
-                    token.ThrowIfCancellationRequested();
-                    // Shell call must run on STA thread to use Task.Run with manual STA
-                    var thumb = await Task.Run(() => ShellThumbnail.GetThumbnail(vm.FullPath, ThumbW, ThumbH), token);
-                    if (thumb != null)
-                        vm.Thumbnail = thumb; // INotifyPropertyChanged fires, grid updates
-                    
-                    Interlocked.Increment(ref _thumbnailsLoaded);
-                    Dispatcher.Invoke(UpdateThumbnailCounter);
-                }
-                catch (OperationCanceledException) { }
-                catch { /* file might be locked or deleted */ }
-                finally { sem.Release(); }
-            });
+                MaxDegreeOfParallelism = 4,
+                CancellationToken = token
+            };
 
-            await Task.WhenAll(tasks);
-            ThumbnailCounter.Visibility = Visibility.Collapsed;
+            try
+            {
+                // Parallel.ForEachAsync throttles task creation natively. 
+                // It won't flood the UI thread when the token is cancelled.
+                await Parallel.ForEachAsync(items, options, async (vm, ct) =>
+                {
+                    var thumb = await Task.Run(() => ShellThumbnail.GetThumbnail(vm.FullPath, ThumbW, ThumbH), ct);
+
+                    if (thumb != null)
+                    {
+                        // Ensure PropertyChanged updates safely on the UI thread
+                        await Application.Current.Dispatcher.InvokeAsync(() => vm.Thumbnail = thumb);
+                    }
+
+                    Interlocked.Increment(ref _thumbnailsLoaded);
+                    await Application.Current.Dispatcher.InvokeAsync(UpdateThumbnailCounter);
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                // Silent catch is correct here; it's a controlled stop.
+            }
+            finally
+            {
+                ThumbnailCounter.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void UpdateThumbnailCounter()
@@ -310,8 +365,36 @@ namespace DriveCrawl_Win32_App
 
         private void SetBusy(bool busy)
         {
-            BtnSearch.IsEnabled       = !busy;
             SearchProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ShowStopButton(bool show)
+        {
+            BtnSearch.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+            BtnStop.Visibility   = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private static void OpenFileWithDefaultProgram(string fullPath)
+        {
+            try
+            {
+                if (!File.Exists(fullPath))
+                {
+                    MessageBox.Show("El archivo no existe.", "Aviso",
+                                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName        = fullPath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al abrir el archivo: " + ex.Message,
+                                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private static void OpenContainingFolder(string fullPath)

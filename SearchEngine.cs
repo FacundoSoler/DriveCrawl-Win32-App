@@ -1,18 +1,21 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading;
 using DriveCrawl_Win32_App.Models;
 
 namespace DriveCrawl_Win32_App.Services
 {
     public class SearchEngine
     {
-        public List<FileModel> Search(List<WatchedFolders> folders, string query)
+        public List<FileModel> Search(List<WatchedFolders> folders, string query, CancellationToken cancellationToken = default)
         {
             var results = new List<FileModel>();
 
             foreach (var folder in folders)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                
                 if (!Directory.Exists(folder.Path)) continue;
 
                 try
@@ -22,6 +25,8 @@ namespace DriveCrawl_Win32_App.Services
 
                     foreach (var filePath in files)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        
                         var info = new FileInfo(filePath);
                         results.Add(new FileModel
                         {
