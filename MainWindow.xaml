@@ -14,6 +14,10 @@
         <SolidColorBrush x:Key="P4Orange" Color="#F97316"/>
         <SolidColorBrush x:Key="PDefault" Color="#6B7280"/>
 
+        <ContextMenu x:Key="RowContextMenu">
+            <MenuItem Header="Show in Windows Explorer" Click="ShowInExplorerMenuItem_Click"/>
+        </ContextMenu>
+
         <DataTemplate x:Key="PriorityDot">
             <Ellipse Width="12" Height="12"
                      HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -72,6 +76,7 @@
 
         <Style TargetType="DataGridRow">
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ContextMenu" Value="{StaticResource RowContextMenu}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#252D42"/>
@@ -176,7 +181,7 @@
                 <CheckBox x:Name="ChkDuplicates"
                           Grid.Column="2"
                           Style="{StaticResource DarkCheckBox}"
-                          Content="Solo duplicados"
+                          Content="Only duplicates"
                           Margin="0,0,16,0"
                           VerticalAlignment="Center"/>
 
@@ -192,7 +197,7 @@
                 <Button x:Name="BtnSearch"
                         Grid.Column="4"
                         Width="100" Height="36"
-                        Content="Buscar"
+                        Content="Search"
                         FontSize="13" FontWeight="SemiBold"
                         Foreground="White"
                         Background="#4A9EFF"
@@ -241,7 +246,7 @@
                                             CellTemplate="{StaticResource ThumbnailTemplate}"
                                             Visibility="Collapsed"/>
 
-                    <DataGridTextColumn Header="NOMBRE" Width="220"
+                    <DataGridTextColumn Header="FILENAME" Width="220"
                                         Binding="{Binding FileName}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -253,7 +258,7 @@
                     </DataGridTextColumn>
 
                     <DataGridTextColumn x:Name="ColSize"
-                                        Header="TAMANO" Width="90"
+                                        Header="SIZE" Width="90"
                                         Binding="{Binding FileSize}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -278,7 +283,7 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="RUTA COMPLETA" Width="*"
+                    <DataGridTextColumn Header="FULL PATH" Width="*"
                                         Binding="{Binding FullPath}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -300,7 +305,7 @@
                 IsHitTestVisible="False" Background="Transparent">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock x:Name="EmptyLabel"
-                           Text="Ingresa un termino y presiona Buscar"
+                           Text="Enter a search term and press Enter"
                            FontSize="14" Foreground="#3A4460"
                            HorizontalAlignment="Center"/>
             </StackPanel>
@@ -318,7 +323,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusLabel"
-                           Text="Listo."
+                           Text="Ready."
                            Foreground="#4A5568" FontSize="12"
                            VerticalAlignment="Center"/>
                 <TextBlock x:Name="ThumbnailCounter"
@@ -334,7 +339,7 @@
                            Margin="20,0,0,0"/>
                 <TextBlock x:Name="ResultCount"
                            Grid.Column="3"
-                           Text="0 resultados"
+                           Text="0 results"
                            Foreground="#4A9EFF" FontSize="12"
                            VerticalAlignment="Center"
                            Margin="20,0,0,0"/>

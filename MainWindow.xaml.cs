@@ -1,3 +1,6 @@
+using DriveCrawl_Win32_App.Data;
+using DriveCrawl_Win32_App.Models;
+using DriveCrawl_Win32_App.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -5,13 +8,11 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using DriveCrawl_Win32_App.Data;
-using DriveCrawl_Win32_App.Models;
-using DriveCrawl_Win32_App.Services;
 
 namespace DriveCrawl_Win32_App
 {
@@ -128,6 +129,17 @@ namespace DriveCrawl_Win32_App
         private const int ThumbW = 160;
         private const int ThumbH = 108;
 
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -163,7 +175,7 @@ namespace DriveCrawl_Win32_App
             _isOperationInProgress = false;
             ShowStopButton(false);
             SetBusy(false);
-            StatusLabel.Text = "Operación cancelada.";
+            StatusLabel.Text = "Operation cancelled.";
         }
 
         private async void StartSearch()
@@ -185,12 +197,10 @@ namespace DriveCrawl_Win32_App
             _results.Clear();
             SetBusy(true);
             EmptyState.Visibility = Visibility.Collapsed;
-            StatusLabel.Text = dupsOnly ? "Buscando duplicados..." : "Buscando...";
-            ResultCount.Text = "0 resultados";
+            StatusLabel.Text = dupsOnly ? "Searching for duplicates..." : "Searching...";
+            ResultCount.Text = "0 Results";
 
-            // Show/hide thumbnail column
             ColThumbnail.Visibility = showThumbs ? Visibility.Visible : Visibility.Collapsed;
-            // Expand row height when thumbnails are on
             ResultsGrid.RowHeight = showThumbs ? ThumbH + 8 : 38;
 
             try
@@ -199,20 +209,18 @@ namespace DriveCrawl_Win32_App
 
                 if (folders.Count == 0)
                 {
-                    EmptyLabel.Text       = "No hay carpetas configuradas en la base de datos.";
+                    EmptyLabel.Text       = "No folders configured in the database.";
                     EmptyState.Visibility = Visibility.Visible;
-                    StatusLabel.Text      = "Sin carpetas configuradas.";
+                    StatusLabel.Text      = "No folders configured.";
                     return;
                 }
 
                 var sw = Stopwatch.StartNew();
 
-                // Run search off UI thread with cancellation support
                 List<FileModel> found = await Task.Run(() => _search.Search(folders, query, token), token);
 
                 token.ThrowIfCancellationRequested();
 
-                // Duplicates filter runs on background thread too
                 if (dupsOnly)
                     found = await Task.Run(() => FilterDuplicates(found), token);
 
@@ -249,28 +257,26 @@ namespace DriveCrawl_Win32_App
                 }
 
                 int count = _results.Count;
-                ResultCount.Text = count + (count != 1 ? " resultados" : " resultado");
-                StatusLabel.Text = "Listo en " + sw.Elapsed.TotalSeconds.ToString("F2") + "s"
-                                   + (dupsOnly ? " (solo duplicados)" : "");
+                ResultCount.Text = count + (count != 1 ? " results" : " result");
+                StatusLabel.Text = "Ready in " + sw.Elapsed.TotalSeconds.ToString("F2") + "s"
+                                   + (dupsOnly ? " (only duplicates)" : "");
 
                 if (count == 0)
                 {
                     EmptyLabel.Text = dupsOnly
-                        ? "No se encontraron duplicados para: " + (string.IsNullOrWhiteSpace(query) ? "(todos los archivos)" : query)
-                        : "Sin resultados para: " + query;
+                        ? "No duplicates found for: " + (string.IsNullOrWhiteSpace(query) ? "(all files)" : query)
+                        : "No results for: " + query;
                     EmptyState.Visibility = Visibility.Visible;
                 }
 
-                // Display total size
-                TotalSizeLabel.Text = "Tamaño total: " + FormatTotalSize(viewModels);
+                TotalSizeLabel.Text = "Total size: " + FormatTotalSize(viewModels);
 
-                // Load thumbnails lazily AFTER results are shown
                 if (showThumbs && count > 0)
-                    await LoadThumbnailsAsync(viewModels, token);
+                    await LoadThumbnailsAsync(viewModels, token); // Load thumbnails lazily AFTER results are shown
             }
             catch (OperationCanceledException)
             {
-                StatusLabel.Text = "Busqueda cancelada.";
+                StatusLabel.Text = "Search cancelled.";
             }
             catch (Exception ex)
             {
@@ -339,7 +345,7 @@ namespace DriveCrawl_Win32_App
 
         private void UpdateThumbnailCounter()
         {
-            ThumbnailCounter.Text = $"Cargando miniaturas: {_thumbnailsLoaded}/{_totalThumbnailsToLoad}";
+            ThumbnailCounter.Text = $"Loading Thumbnails: {_thumbnailsLoaded}/{_totalThumbnailsToLoad}";
         }
 
         private static List<FileModel> FilterDuplicates(List<FileModel> all)
@@ -380,7 +386,7 @@ namespace DriveCrawl_Win32_App
             {
                 if (!File.Exists(fullPath))
                 {
-                    MessageBox.Show("El archivo no existe.", "Aviso",
+                    MessageBox.Show("File doesn't exist.", "Warning",
                                     MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -392,11 +398,21 @@ namespace DriveCrawl_Win32_App
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al abrir el archivo: " + ex.Message,
+                MessageBox.Show("Error opening file: " + ex.Message,
                                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
+        private void ShowInExplorerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.DataContext is FileViewModel file)
+            {
+                OpenContainingFolder(file.FullPath);
+            }
+        }
+
+        // Attempts to focus the file in an existing Explorer window. 
+        // If it's not open, it launches a new Explorer instance.
         private static void OpenContainingFolder(string fullPath)
         {
             try
@@ -404,22 +420,81 @@ namespace DriveCrawl_Win32_App
                 string? folder = Path.GetDirectoryName(fullPath);
                 if (folder == null || !Directory.Exists(folder))
                 {
-                    MessageBox.Show("No se encontro la carpeta.", "Aviso",
-                                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("Folder not found.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
-                Process.Start(new ProcessStartInfo
+                
+                if (!FocusFileInExistingExplorer(fullPath)) // Try to be efficient: check if the folder is already open
                 {
-                    FileName        = "explorer.exe",
-                    Arguments       = "/select,\"" + fullPath + "\"",
-                    UseShellExecute = true
-                });
+                    
+                    Process.Start(new ProcessStartInfo // Fallback: open a brand new Explorer window and select the file
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"/select,\"{fullPath}\"",
+                        UseShellExecute = true
+                    });
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al abrir Explorer: " + ex.Message,
-                                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Error opening Explorer: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        // Uses Windows Shell COM automation to find open Explorer windows
+        private static bool FocusFileInExistingExplorer(string filePath)
+        {
+            try
+            {
+                string? targetFolder = Path.GetDirectoryName(filePath);
+                string? fileName = Path.GetFileName(filePath);
+                if (string.IsNullOrEmpty(targetFolder) || string.IsNullOrEmpty(fileName)) return false;
+
+                string normalizedTarget = Path.GetFullPath(targetFolder).TrimEnd('\\').ToLowerInvariant();
+
+                Type? shellAppType = Type.GetTypeFromProgID("Shell.Application");
+                if (shellAppType == null) return false;
+
+                dynamic shell = Activator.CreateInstance(shellAppType)!;
+                var windows = shell.Windows();
+
+                foreach (var win in windows)
+                {
+                    try
+                    {
+                        // We must handle cases where LocationURL is a URI (file:///...)
+                        string? url = win.LocationURL as string;
+                        if (string.IsNullOrEmpty(url)) continue;
+
+                        string winPath = Path.GetFullPath(new Uri(url).LocalPath).TrimEnd('\\').ToLowerInvariant();
+
+                        if (winPath == normalizedTarget)
+                        {
+                            IntPtr hwnd = (IntPtr)win.HWND;
+
+                            // Handle minimized states and force foreground
+                            if (IsIconic(hwnd)) ShowWindow(hwnd, SW_RESTORE);
+                            SetForegroundWindow(hwnd);
+
+                            var folderView = win.Document;
+                            var folderItem = folderView.Folder.ParseName(fileName);
+
+                            if (folderItem != null)
+                            {
+                                // Now we can select it using the View
+                                // Flags: 1=Deselect others, 8=Ensure visible, 16=Focus
+                                folderView.SelectItem(folderItem, 1 | 8 | 16);
+                            }
+
+                            return true;
+                        }
+                    }
+                    catch { /* Skip windows that are non-responsive */ }
+                }
+            }
+            catch { /* Fallback to new instance */ }
+
+            return false;
         }
     }
 }
