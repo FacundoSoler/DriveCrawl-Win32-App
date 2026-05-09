@@ -33,6 +33,13 @@ namespace DriveCrawl_Win32_App
             set { _thumbnail = value; OnPropertyChanged(nameof(Thumbnail)); }
         }
 
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnPropertyChanged(nameof(IsSelected)); }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged(string name)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -124,6 +131,9 @@ namespace DriveCrawl_Win32_App
         private int _thumbnailsLoaded;
         private int _totalThumbnailsToLoad;
         private bool _isOperationInProgress;
+        
+        // Store original search results before filtering
+        private List<FileViewModel> _searchResults = new();
 
         // Thumbnail size matching Windows 11 "Large Icons"
         private const int ThumbW = 160;
@@ -178,6 +188,65 @@ namespace DriveCrawl_Win32_App
             StatusLabel.Text = "Operation cancelled.";
         }
 
+        private void TxtFilter_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ApplyFilter();
+                e.Handled = true;
+            }
+        }
+
+        private void BtnFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            string filterText = TxtFilter.Text.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrEmpty(filterText))
+            {
+                // Restore all original results if filter is empty
+                _results.Clear();
+                foreach (var item in _searchResults)
+                {
+                    _results.Add(item);
+                }
+            }
+            else
+            {
+                // Filter results by filename, extension, or full path (case-insensitive)
+                var filtered = _searchResults
+                    .Where(f => f.FileName.ToLowerInvariant().Contains(filterText)
+                             || f.Extension.ToLowerInvariant().Contains(filterText)
+                             || f.FullPath.ToLowerInvariant().Contains(filterText))
+                    .ToList();
+
+                _results.Clear();
+                foreach (var item in filtered)
+                {
+                    _results.Add(item);
+                }
+            }
+
+            // Update result count
+            int count = _results.Count;
+            ResultCount.Text = count + (count != 1 ? " results" : " result");
+            TotalSizeLabel.Text = "Total size: " + FormatTotalSize(_results.ToList());
+
+            if (count == 0)
+            {
+                EmptyLabel.Text = "No results match the filter: " + TxtFilter.Text;
+                EmptyState.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                EmptyState.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private async void StartSearch()
         {
             string query    = TxtSearch.Text.Trim();
@@ -195,6 +264,9 @@ namespace DriveCrawl_Win32_App
             ShowStopButton(true);
 
             _results.Clear();
+            _searchResults.Clear();
+            TxtFilter.Clear();
+            TxtFilter.IsEnabled = false;
             SetBusy(true);
             EmptyState.Visibility = Visibility.Collapsed;
             StatusLabel.Text = dupsOnly ? "Searching for duplicates..." : "Searching...";
@@ -239,39 +311,41 @@ namespace DriveCrawl_Win32_App
 
                 token.ThrowIfCancellationRequested();
 
+                // Auto-select all but the lowest-priority file in each duplicate group
+                if (dupsOnly)
+                {
+                    var groups = viewModels
+                        .GroupBy(f => new { f.FileName, f.FileSize });
+                    foreach (var group in groups)
+                    {
+                        // Find the file with the highest Priority value (lowest-priority drive)
+                        var toKeep = group.OrderByDescending(f => f.Priority).FirstOrDefault();
+                        foreach (var file in group)
+                        {
+                            file.IsSelected = (toKeep != null && file != toKeep);
+                        }
+                    }
+                }
+
                 // Add results to UI in batches to avoid blocking
                 // Batch size: add 100 items at a time, then yield to UI
                 const int batchSize = 100;
                 for (int i = 0; i < viewModels.Count; i += batchSize)
                 {
                     token.ThrowIfCancellationRequested();
-                    
                     var batch = viewModels.Skip(i).Take(batchSize).ToList();
                     foreach (var vm in batch)
                     {
                         _results.Add(vm);
                     }
-                    
-                    // Yield to UI thread to keep responsive
                     await Task.Delay(1, token);
                 }
 
-                int count = _results.Count;
-                ResultCount.Text = count + (count != 1 ? " results" : " result");
-                StatusLabel.Text = "Ready in " + sw.Elapsed.TotalSeconds.ToString("F2") + "s"
-                                   + (dupsOnly ? " (only duplicates)" : "");
-
-                if (count == 0)
-                {
-                    EmptyLabel.Text = dupsOnly
-                        ? "No duplicates found for: " + (string.IsNullOrWhiteSpace(query) ? "(all files)" : query)
-                        : "No results for: " + query;
-                    EmptyState.Visibility = Visibility.Visible;
-                }
-
+                // Store the full search results for filtering
+                _searchResults = viewModels.ToList();
                 TotalSizeLabel.Text = "Total size: " + FormatTotalSize(viewModels);
 
-                if (showThumbs && count > 0)
+                if (showThumbs && viewModels.Count > 0)
                     await LoadThumbnailsAsync(viewModels, token); // Load thumbnails lazily AFTER results are shown
             }
             catch (OperationCanceledException)
@@ -288,6 +362,7 @@ namespace DriveCrawl_Win32_App
                 _isOperationInProgress = false;
                 ShowStopButton(false);
                 SetBusy(false);
+                TxtFilter.IsEnabled = _searchResults.Count > 0;
             }
         }
 
@@ -326,11 +401,19 @@ namespace DriveCrawl_Win32_App
                     if (thumb != null)
                     {
                         // Ensure PropertyChanged updates safely on the UI thread
-                        await Application.Current.Dispatcher.InvokeAsync(() => vm.Thumbnail = thumb);
+                        var dispatcher = Application.Current?.Dispatcher;
+                        if (dispatcher != null)
+                        {
+                            await dispatcher.InvokeAsync(() => vm.Thumbnail = thumb);
+                        }
                     }
 
                     Interlocked.Increment(ref _thumbnailsLoaded);
-                    await Application.Current.Dispatcher.InvokeAsync(UpdateThumbnailCounter);
+                    var counterDispatcher = Application.Current?.Dispatcher;
+                    if (counterDispatcher != null)
+                    {
+                        await counterDispatcher.InvokeAsync(UpdateThumbnailCounter);
+                    }
                 });
             }
             catch (OperationCanceledException)
@@ -350,15 +433,20 @@ namespace DriveCrawl_Win32_App
 
         private static List<FileModel> FilterDuplicates(List<FileModel> all)
         {
-            var duplicateNames = all
-                .GroupBy(f => f.FileName, StringComparer.OrdinalIgnoreCase)
+            // Group by filename AND size using anonymous type
+            var duplicateGroups = all
+                .GroupBy(f => new { f.FileName, f.FileSize })
                 .Where(g => g.Count() > 1)
+                .ToList();
+
+            var duplicateNamesAndSizes = duplicateGroups
                 .Select(g => g.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToHashSet();
 
             return all
-                .Where(f => duplicateNames.Contains(f.FileName))
+                .Where(f => duplicateNamesAndSizes.Contains(new { f.FileName, f.FileSize }))
                 .OrderBy(f => f.FileName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(f => f.FileSize)
                 .ToList();
         }
 
@@ -495,6 +583,48 @@ namespace DriveCrawl_Win32_App
             catch { /* Fallback to new instance */ }
 
             return false;
+        }
+
+        private void SelectCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateDeleteButtonState();
+        }
+        private void SelectCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdateDeleteButtonState();
+        }
+        private void UpdateDeleteButtonState()
+        {
+            BtnDeleteSelected.IsEnabled = _results.Any(f => f.IsSelected);
+        }
+
+        private async void BtnDeleteSelected_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _results.Where(f => f.IsSelected).ToList();
+            if (selected.Count == 0) return;
+            var result = MessageBox.Show($"Are you sure you want to delete {selected.Count} file(s)?",
+                                         "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes) return;
+
+            int deleted = 0;
+            foreach (var file in selected)
+            {
+                try
+                {
+                    if (File.Exists(file.FullPath))
+                    {
+                        File.Delete(file.FullPath);
+                        deleted++;
+                    }
+                    _results.Remove(file);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to delete: {file.FullPath}\n{ex.Message}", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            MessageBox.Show($"Deleted {deleted} file(s).", "Delete Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            UpdateDeleteButtonState();
         }
     }
 }

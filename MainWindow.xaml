@@ -132,11 +132,13 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- HEADER -->
+        <!-- HEADER (Search bar) -->
         <Border Grid.Row="0" Background="#161B27"
                 BorderBrush="#2A3048" BorderThickness="0,0,0,1"
                 Padding="16,10">
@@ -221,9 +223,78 @@
             </Grid>
         </Border>
 
+        <!-- MENU BAR (Delete button) -->
+        <Border Grid.Row="1" Background="#181C29" BorderBrush="#23283A" BorderThickness="0,0,0,1" Padding="12,6">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <Button x:Name="BtnDeleteSelected"
+                        Click="BtnDeleteSelected_Click"
+                        Margin="0,0,8,0"
+                        Padding="8,2"
+                        VerticalAlignment="Center"
+                        IsEnabled="False"
+                        Background="#EF4444" Foreground="White" BorderThickness="0" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Viewbox Width="16" Height="16" VerticalAlignment="Center">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M3,6 L5,6 L21,6 M19,6 L17.5,19.5 C17.4,20.3 16.7,21 15.9,21 L8.1,21 C7.3,21 6.6,20.3 6.5,19.5 L5,6 M10,11 L10,17 M14,11 L14,17"
+                                      Stroke="White" StrokeThickness="2"/>
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="Delete" Margin="6,0,0,0" FontWeight="SemiBold" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- FILTER BAR (Newly Added) -->
+        <Border Grid.Row="2" Background="#161B27"
+                BorderBrush="#2A3048" BorderThickness="0,0,0,1"
+                Padding="16,10,16,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Secondary filter title -->
+                <TextBlock Text="Filter by size or type"
+                           Foreground="#7A8499" FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"/>
+
+                <!-- Secondary filter textbox -->
+                <TextBox x:Name="TxtFilter"
+                         Grid.Column="1"
+                         Height="32"
+                         FontSize="13"
+                         Foreground="#E8ECF4"
+                         Background="#1E2536"
+                         BorderBrush="#2A3048"
+                         BorderThickness="1"
+                         Padding="10,0"
+                         VerticalContentAlignment="Center"
+                         CaretBrush="#4A9EFF"
+                         KeyDown="TxtFilter_KeyDown"/>
+
+                <!-- Filter button (optional) -->
+                <Button x:Name="BtnFilter"
+                        Grid.Column="2"
+                        Width="100" Height="32"
+                        Content="Apply Filter"
+                        FontSize="13" FontWeight="SemiBold"
+                        Foreground="White"
+                        Background="#4A9EFF"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        Margin="8,0,0,0"
+                        Click="BtnFilter_Click"/>
+            </Grid>
+        </Border>
+
         <!-- PROGRESS BAR -->
         <ProgressBar x:Name="SearchProgress"
-                     Grid.Row="1"
+                     Grid.Row="3"
                      Height="3"
                      Foreground="#4A9EFF"
                      Background="#1E2536"
@@ -232,10 +303,20 @@
                      Visibility="Collapsed"/>
 
         <!-- RESULTS -->
-        <Border Grid.Row="2" Background="#0F1117">
+        <Border Grid.Row="4" Background="#0F1117">
             <DataGrid x:Name="ResultsGrid"
-                      MouseDoubleClick="ResultsGrid_MouseDoubleClick">
+                      MouseDoubleClick="ResultsGrid_MouseDoubleClick"
+                      AutoGenerateColumns="False">
                 <DataGrid.Columns>
+                    <!-- Select column -->
+                    <DataGridTemplateColumn Header="Select" Width="48">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Checked="SelectCheckBox_Checked" Unchecked="SelectCheckBox_Unchecked"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
                     <DataGridTemplateColumn Header="" Width="40"
                                             CellTemplate="{StaticResource PriorityDot}"/>
@@ -301,7 +382,7 @@
         </Border>
 
         <!-- EMPTY STATE -->
-        <Border Grid.Row="2" x:Name="EmptyState"
+        <Border Grid.Row="4" x:Name="EmptyState"
                 IsHitTestVisible="False" Background="Transparent">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock x:Name="EmptyLabel"
@@ -312,7 +393,7 @@
         </Border>
 
         <!-- STATUS BAR -->
-        <Border Grid.Row="3" Background="#161B27"
+        <Border Grid.Row="5" Background="#161B27"
                 BorderBrush="#2A3048" BorderThickness="0,1,0,0"
                 Padding="16,6">
             <Grid>
