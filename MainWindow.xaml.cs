@@ -131,9 +131,13 @@ namespace DriveCrawl_Win32_App
         private int _thumbnailsLoaded;
         private int _totalThumbnailsToLoad;
         private bool _isOperationInProgress;
-        
+
         // Store original search results before filtering
         private List<FileViewModel> _searchResults = new();
+
+        // Timer for tracking search duration
+        private System.Windows.Threading.DispatcherTimer? _searchTimer;
+        private Stopwatch? _searchStopwatch;
 
         // Thumbnail size matching Windows 11 "Large Icons"
         private const int ThumbW = 160;
@@ -260,6 +264,13 @@ namespace DriveCrawl_Win32_App
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
 
+            // Stop and clean up any existing timer
+            if (_searchTimer != null)
+            {
+                _searchTimer.Stop();
+                _searchTimer = null;
+            }
+
             _isOperationInProgress = true;
             ShowStopButton(true);
 
@@ -274,6 +285,22 @@ namespace DriveCrawl_Win32_App
 
             ColThumbnail.Visibility = showThumbs ? Visibility.Visible : Visibility.Collapsed;
             ResultsGrid.RowHeight = showThumbs ? ThumbH + 8 : 38;
+
+            // Initialize and start the search timer for live elapsed time display
+            _searchStopwatch = Stopwatch.StartNew();
+            _searchTimer = new System.Windows.Threading.DispatcherTimer();
+            _searchTimer.Interval = TimeSpan.FromMilliseconds(100);
+            _searchTimer.Tick += (s, e) =>
+            {
+                if (_searchStopwatch != null)
+                {
+                    double elapsed = _searchStopwatch.Elapsed.TotalSeconds;
+                    StatusLabel.Text = dupsOnly 
+                        ? $"Searching for duplicates... ({elapsed:F1}s)" 
+                        : $"Searching... ({elapsed:F1}s)";
+                }
+            };
+            _searchTimer.Start();
 
             try
             {
@@ -345,8 +372,19 @@ namespace DriveCrawl_Win32_App
                 _searchResults = viewModels.ToList();
                 TotalSizeLabel.Text = "Total size: " + FormatTotalSize(viewModels);
 
+                // Update result count after search completes
+                int resultCount = viewModels.Count;
+                ResultCount.Text = resultCount + (resultCount != 1 ? " results" : " result");
+
                 if (showThumbs && viewModels.Count > 0)
                     await LoadThumbnailsAsync(viewModels, token); // Load thumbnails lazily AFTER results are shown
+
+                // Update status with final elapsed time
+                if (_searchStopwatch != null)
+                {
+                    double elapsedSeconds = _searchStopwatch.Elapsed.TotalSeconds;
+                    StatusLabel.Text = $"Ready. Search completed in {elapsedSeconds:F2}s";
+                }
             }
             catch (OperationCanceledException)
             {
@@ -359,6 +397,13 @@ namespace DriveCrawl_Win32_App
             }
             finally
             {
+                // Stop the search timer
+                if (_searchTimer != null)
+                {
+                    _searchTimer.Stop();
+                    _searchTimer = null;
+                }
+
                 _isOperationInProgress = false;
                 ShowStopButton(false);
                 SetBusy(false);
