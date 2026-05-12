@@ -1,4 +1,5 @@
 using DriveCrawl_Win32_App.Data;
+using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -51,6 +52,7 @@ namespace DriveCrawl_Win32_App
             string query = TxtSearch.Text.Trim();
             bool dupsOnly = ChkDuplicates.IsChecked == true;
             bool showThumbs = ChkThumbnails.IsChecked == true;
+            FileTypeFilter fileTypeFilter = GetSelectedFileTypeFilter();
 
             CancelPreviousSearch();
             _isOperationInProgress = true;
@@ -65,7 +67,7 @@ namespace DriveCrawl_Win32_App
 
             try
             {
-                var viewModels = await PerformSearchAsync(query, dupsOnly, token);
+                var viewModels = await PerformSearchAsync(query, dupsOnly, fileTypeFilter, token);
                 token.ThrowIfCancellationRequested();
 
                 if (viewModels.Count > 0)
@@ -121,11 +123,11 @@ namespace DriveCrawl_Win32_App
             ResultsGrid.RowHeight = showThumbnails ? GridRowHeightWithThumbnails : GridRowHeight;
         }
 
-        private async Task<List<FileViewModel>> PerformSearchAsync(string query, bool includeDuplicatesOnly, CancellationToken token)
+        private async Task<List<FileViewModel>> PerformSearchAsync(string query, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
         {
             try
             {
-                return await _searchCoordinator.ExecuteSearchAsync(query, includeDuplicatesOnly, token);
+                return await _searchCoordinator.ExecuteSearchAsync(query, includeDuplicatesOnly, fileTypeFilter, token);
             }
             catch (InvalidOperationException ex)
             {
@@ -173,6 +175,18 @@ namespace DriveCrawl_Win32_App
         private void SetBusy(bool busy)
         {
             SearchProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private FileTypeFilter GetSelectedFileTypeFilter()
+        {
+            return CmbFileType.SelectedIndex switch
+            {
+                0 => FileTypeFilter.AllFiles,
+                1 => FileTypeFilter.Videos,
+                2 => FileTypeFilter.Photos,
+                3 => FileTypeFilter.Other,
+                _ => FileTypeFilter.AllFiles
+            };
         }
 
         #endregion

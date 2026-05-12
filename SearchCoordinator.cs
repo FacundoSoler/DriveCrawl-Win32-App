@@ -20,13 +20,13 @@ namespace DriveCrawl_Win32_App
             _searchEngine = searchEngine ?? throw new ArgumentNullException(nameof(searchEngine));
         }
 
-        public async Task<List<FileViewModel>> ExecuteSearchAsync(string query, bool includeDuplicatesOnly, CancellationToken token)
+        public async Task<List<FileViewModel>> ExecuteSearchAsync(string query, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
         {
             var folders = await Task.Run(() => _database.GetFolders(), token);
             if (folders.Count == 0)
                 throw new InvalidOperationException("No folders configured in the database.");
 
-            var foundFiles = await RunSearchAsync(folders, query, token);
+            var foundFiles = await RunSearchAsync(folders, query, fileTypeFilter, token);
             token.ThrowIfCancellationRequested();
 
             if (includeDuplicatesOnly)
@@ -49,9 +49,9 @@ namespace DriveCrawl_Win32_App
             return viewModels;
         }
 
-        private async Task<List<FileModel>> RunSearchAsync(List<WatchedFolders> folders, string query, CancellationToken token)
+        private async Task<List<FileModel>> RunSearchAsync(List<WatchedFolders> folders, string query, FileTypeFilter fileTypeFilter, CancellationToken token)
         {
-            return await Task.Run(() => _searchEngine.Search(folders, query, token), token);
+            return await Task.Run(() => _searchEngine.Search(folders, query, fileTypeFilter, token), token);
         }
 
         private static List<FileModel> FilterDuplicates(List<FileModel> all)
