@@ -1,5 +1,4 @@
 using DriveCrawl_Win32_App.Data;
-using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -42,6 +41,72 @@ namespace DriveCrawl_Win32_App
         }
 
         #region Search Orchestration
+
+        #endregion
+
+        #region Main Search Entry Point
+
+        private async void StartSearch()
+        {
+            string query = TxtSearch.Text.Trim();
+            bool dupsOnly = ChkDuplicates.IsChecked == true;
+            bool showThumbs = ChkThumbnails.IsChecked == true;
+
+            CancelPreviousSearch();
+            _isOperationInProgress = true;
+            ShowStopButton(true);
+
+            PrepareSearchUI(showThumbs);
+
+            string timerMessage = dupsOnly ? "Searching for duplicates..." : "Searching...";
+            _timerManager.StartTimer(timerMessage);
+
+            var token = _searchCts!.Token;
+
+            try
+            {
+                var viewModels = await PerformSearchAsync(query, dupsOnly, token);
+                token.ThrowIfCancellationRequested();
+
+                if (viewModels.Count > 0)
+                {
+                    await AddSearchResultsToUIAsync(viewModels, token);
+                    FinalizeSearchResults(viewModels);
+
+                    if (showThumbs)
+                        await _thumbnailManager.LoadThumbnailsAsync(viewModels, token);
+                }
+
+                _timerManager.SetCompletionStatus($"Ready. Search completed in {_timerManager.GetElapsedSeconds():F2} seconds.");
+            }
+            catch (OperationCanceledException)
+            {
+                StatusLabel.Text = "Search cancelled.";
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Text = $"Error: {ex.Message}";
+                MessageBox.Show(ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                CleanupAfterSearch();
+            }
+        }
+
+        private void CancelPreviousSearch()
+        {
+            _searchCts?.Cancel();
+            _searchCts?.Dispose();
+            _searchCts = new CancellationTokenSource();
+            _thumbnailManager.CancelLoading();
+        }
+
+        private void ShowStopButton(bool show)
+        {
+            BtnSearch.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+            BtnStop.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         private void PrepareSearchUI(bool showThumbnails)
         {
@@ -94,67 +159,7 @@ namespace DriveCrawl_Win32_App
 
         #endregion
 
-        #region Main Search Entry Point
-
-        private async void StartSearch()
-        {
-            string query = TxtSearch.Text.Trim();
-            bool dupsOnly = ChkDuplicates.IsChecked == true;
-            bool showThumbs = ChkThumbnails.IsChecked == true;
-
-            CancelPreviousSearch();
-            _isOperationInProgress = true;
-            ShowStopButton(true);
-
-            PrepareSearchUI(showThumbs);
-
-            string timerMessage = dupsOnly ? "Searching for duplicates..." : "Searching...";
-            _timerManager.StartTimer(timerMessage);
-
-            var token = _searchCts!.Token;
-
-            try
-            {
-                var viewModels = await PerformSearchAsync(query, dupsOnly, token);
-                token.ThrowIfCancellationRequested();
-
-                if (viewModels.Count > 0)
-                {
-                    await AddSearchResultsToUIAsync(viewModels, token);
-                    FinalizeSearchResults(viewModels);
-
-                    if (showThumbs)
-                        await _thumbnailManager.LoadThumbnailsAsync(viewModels, token);
-                }
-
-                _timerManager.SetCompletionStatus("Ready. Search completed in");
-            }
-            catch (OperationCanceledException)
-            {
-                StatusLabel.Text = "Search cancelled.";
-            }
-            catch (Exception ex)
-            {
-                StatusLabel.Text = $"Error: {ex.Message}";
-                MessageBox.Show(ex.ToString(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                CleanupAfterSearch();
-            }
-        }
-
-        #endregion
-
         #region Search Utilities
-
-        private void CancelPreviousSearch()
-        {
-            _searchCts?.Cancel();
-            _searchCts?.Dispose();
-            _searchCts = new CancellationTokenSource();
-            _thumbnailManager.CancelLoading();
-        }
 
         private void CleanupAfterSearch()
         {
@@ -168,12 +173,6 @@ namespace DriveCrawl_Win32_App
         private void SetBusy(bool busy)
         {
             SearchProgress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void ShowStopButton(bool show)
-        {
-            BtnSearch.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
-            BtnStop.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
 
         #endregion
