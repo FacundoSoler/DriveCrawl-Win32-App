@@ -189,7 +189,7 @@
                           FontSize="13"
                           VerticalAlignment="Center"
                           VerticalContentAlignment="Center"
-                          Foreground="#E8ECF4"
+                          Foreground="Black"
                           Background="#1E2536"
                           BorderBrush="#2A3048"
                           BorderThickness="1"
@@ -253,7 +253,7 @@
                         Padding="8,2"
                         VerticalAlignment="Center"
                         IsEnabled="False"
-                        Background="#EF4444" Foreground="White" BorderThickness="0" Cursor="Hand">
+                        Background="#EF4444" Foreground="Black" BorderThickness="0" Cursor="Hand">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Viewbox Width="16" Height="16" VerticalAlignment="Center">
                             <Canvas Width="24" Height="24">
