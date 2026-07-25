@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -22,28 +23,97 @@ namespace DriveCrawl_Win32_App.Services
 
         private const int SW_RESTORE = 9;
 
+        private const string VlcAppPathKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\vlc.exe";
+        private const string VlcArgumentsFormat = "--no-one-instance \"{0}\"";
+
         public static void OpenFileWithDefaultProgram(string fullPath)
         {
+            if (string.IsNullOrWhiteSpace(fullPath))
+            {
+                throw new ArgumentException("Path cannot be null or empty.", nameof(fullPath));
+            }
+
+            if (!File.Exists(fullPath))
+            {
+                MessageBox.Show("File doesn't exist.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             try
             {
-                if (!File.Exists(fullPath))
+                if (TryFindVlcPath(out string vlcPath))
                 {
-                    MessageBox.Show("File doesn't exist.", "Warning",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    LaunchVlcNewInstance(vlcPath, fullPath);
                 }
-
-                Process.Start(new ProcessStartInfo
+                else
                 {
-                    FileName = fullPath,
-                    UseShellExecute = true
-                });
+                    LaunchFallbackDefaultProgram(fullPath);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error opening file: {ex.Message}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error opening file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static bool TryFindVlcPath(out string vlcPath)
+        {
+            // Check 64-bit registry, 32-bit registry, user registry, then physical fallback folders
+            vlcPath = GetRegistryValue(RegistryHive.LocalMachine, RegistryView.Registry64)
+                   ?? GetRegistryValue(RegistryHive.LocalMachine, RegistryView.Registry32)
+                   ?? GetRegistryValue(RegistryHive.CurrentUser, RegistryView.Default)
+                   ?? GetDefaultInstallationPath();
+
+            return !string.IsNullOrEmpty(vlcPath) && File.Exists(vlcPath);
+        }
+
+        private static string GetRegistryValue(RegistryHive hive, RegistryView view)
+        {
+            try
+            {
+                using var baseKey = RegistryKey.OpenBaseKey(hive, view);
+                using var subKey = baseKey.OpenSubKey(VlcAppPathKey);
+                return subKey?.GetValue(null)?.ToString(); // Default value contains full path to exe
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string GetDefaultInstallationPath()
+        {
+            var standardPaths = new[]
+            {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "VideoLAN", "VLC", "vlc.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "VideoLAN", "VLC", "vlc.exe")
+        };
+
+            foreach (var path in standardPaths)
+            {
+                if (File.Exists(path)) return path;
+            }
+
+            return null;
+        }
+
+        private static void LaunchVlcNewInstance(string vlcPath, string filePath)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = vlcPath,
+                Arguments = string.Format(VlcArgumentsFormat, filePath),
+                UseShellExecute = false
+            });
+        }
+
+        private static void LaunchFallbackDefaultProgram(string filePath)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = filePath,
+                UseShellExecute = true
+            });
         }
 
         public static void OpenContainingFolder(string fullPath)

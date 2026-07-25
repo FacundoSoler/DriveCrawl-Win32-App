@@ -1,8 +1,5 @@
-﻿using System;
+﻿using DriveCrawl_Win32_App.Models;
 using System.IO;
-using System.Collections.Generic;
-using System.Threading;
-using DriveCrawl_Win32_App.Models;
 
 namespace DriveCrawl_Win32_App.Services
 {
@@ -30,7 +27,7 @@ namespace DriveCrawl_Win32_App.Services
 
                 try
                 {
-                    // EnumerateFiles es ideal para no saturar la RAM si hay miles de archivos
+                    // EnumerateFiles is ideal to avoid saturating RAM if there are thousands of files
                     var files = Directory.EnumerateFiles(folder.Path, $"*{query}*", SearchOption.AllDirectories);
 
                     foreach (var filePath in files)
@@ -55,7 +52,7 @@ namespace DriveCrawl_Win32_App.Services
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    // Ignora carpetas protegidas (como System Volume Information)
+                    // Ignore protected folders (like System Volume Information)
                 }
                 catch (Exception ex)
                 {

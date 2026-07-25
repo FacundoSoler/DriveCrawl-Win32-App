@@ -4,6 +4,7 @@
         Title="DriveCrawl" Height="720" Width="1100"
         MinHeight="520" MinWidth="800"
         Background="#0F1117"
+        Icon="Resources/app_icon.ico"
         FontFamily="Segoe UI">
 
     <Window.Resources>
@@ -168,7 +169,7 @@
                 <!-- Search box -->
                 <TextBox x:Name="TxtSearch"
                          Grid.Column="1"
-                         Margin="20,0,12,0"
+                         Margin="20,0,20,0"
                          Height="36"
                          FontSize="13"
                          Foreground="#E8ECF4"
@@ -185,7 +186,7 @@
                           Grid.Column="2"
                           Width="120"
                           Height="36"
-                          Margin="0,0,12,0"
+                          Margin="0,0,20,0"
                           FontSize="13"
                           VerticalAlignment="Center"
                           VerticalContentAlignment="Center"
@@ -201,16 +202,24 @@
                 </ComboBox>
 
                 <!-- Duplicates checkbox -->
+                <CheckBox x:Name="ChkExactPhrase"
+                  Grid.Column="3"
+                  Style="{StaticResource DarkCheckBox}"
+                  Content="Exact phrase"
+                  Margin="10,0,20,0"
+                  VerticalAlignment="Center"/>
+
+                <!-- Duplicates checkbox -->
                 <CheckBox x:Name="ChkDuplicates"
-                          Grid.Column="3"
+                          Grid.Column="4"
                           Style="{StaticResource DarkCheckBox}"
                           Content="Only duplicates"
-                          Margin="0,0,16,0"
+                          Margin="30,0,8,0"
                           VerticalAlignment="Center"/>
 
                 <!-- Thumbnails checkbox -->
                 <CheckBox x:Name="ChkThumbnails"
-                          Grid.Column="4"
+                          Grid.Column="5"
                           Style="{StaticResource DarkCheckBox}"
                           Content="Show Thumbnails"
                           Margin="0,0,14,0"
@@ -218,7 +227,7 @@
 
                 <!-- Search button -->
                 <Button x:Name="BtnSearch"
-                        Grid.Column="5"
+                        Grid.Column="6"
                         Width="100" Height="36"
                         Content="Search"
                         FontSize="13" FontWeight="SemiBold"

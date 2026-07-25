@@ -50,6 +50,7 @@ namespace DriveCrawl_Win32_App
         private async void StartSearch()
         {
             string query = TxtSearch.Text.Trim();
+            bool isExactPhrase = ChkExactPhrase.IsChecked == true;
             bool dupsOnly = ChkDuplicates.IsChecked == true;
             bool showThumbs = ChkThumbnails.IsChecked == true;
             FileTypeFilter fileTypeFilter = GetSelectedFileTypeFilter();
@@ -67,7 +68,7 @@ namespace DriveCrawl_Win32_App
 
             try
             {
-                var viewModels = await PerformSearchAsync(query, dupsOnly, fileTypeFilter, token);
+                var viewModels = await PerformSearchAsync(query, isExactPhrase, dupsOnly, fileTypeFilter, token);
                 token.ThrowIfCancellationRequested();
 
                 if (viewModels.Count > 0)
@@ -123,11 +124,11 @@ namespace DriveCrawl_Win32_App
             ResultsGrid.RowHeight = showThumbnails ? GridRowHeightWithThumbnails : GridRowHeight;
         }
 
-        private async Task<List<FileViewModel>> PerformSearchAsync(string query, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
+        private async Task<List<FileViewModel>> PerformSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
         {
             try
             {
-                return await _searchCoordinator.ExecuteSearchAsync(query, includeDuplicatesOnly, fileTypeFilter, token);
+                return await _searchCoordinator.ExecuteSearchAsync(query, isExactPhrase, includeDuplicatesOnly, fileTypeFilter, token);
             }
             catch (InvalidOperationException ex)
             {

@@ -1,7 +1,7 @@
-using System.Collections.ObjectModel;
 using DriveCrawl_Win32_App.Data;
 using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.Services;
+using System.Text.RegularExpressions;
 
 namespace DriveCrawl_Win32_App
 {
@@ -20,7 +20,7 @@ namespace DriveCrawl_Win32_App
             _searchEngine = searchEngine ?? throw new ArgumentNullException(nameof(searchEngine));
         }
 
-        public async Task<List<FileViewModel>> ExecuteSearchAsync(string query, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
+        public async Task<List<FileViewModel>> ExecuteSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
         {
             var folders = await Task.Run(() => _database.GetFolders(), token);
             if (folders.Count == 0)
@@ -44,6 +44,11 @@ namespace DriveCrawl_Win32_App
             if (includeDuplicatesOnly)
             {
                 AutoSelectDuplicatesForDeletion(viewModels);
+            }
+
+            if (isExactPhrase)
+            {
+                viewModels = await Task.Run(() => FilterByExactWord(viewModels, query), token);
             }
 
             return viewModels;
@@ -83,6 +88,29 @@ namespace DriveCrawl_Win32_App
                     file.IsSelected = (lowestPriorityFile != null && file != lowestPriorityFile);
                 }
             }
+        }
+
+        private static List<FileViewModel> FilterByExactWord(List<FileViewModel> viewModels, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return viewModels;
+
+            // Construct and compile the Regex for exact word matching
+            string pattern = $@"\b{Regex.Escape(query)}\b";
+            var regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+            return viewModels.Where(f =>
+            {
+                string nameOnly = f.FileName;
+
+                // Rigorous check: Strip the extension strictly in-memory using the ViewModel's properties
+                if (!string.IsNullOrEmpty(f.Extension) && f.FileName.EndsWith(f.Extension))
+                {
+                    nameOnly = f.FileName.Substring(0, f.FileName.Length - f.Extension.Length);
+                }
+
+                return regex.IsMatch(nameOnly);
+            }).ToList();
         }
     }
 }
