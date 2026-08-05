@@ -16,6 +16,9 @@ namespace DriveCrawl_Win32_App
         public DateTime CreatedAt { get; set; }
         public int Priority { get; set; }
 
+        public TimeSpan? Duration { get; set; }
+        public int? BitrateKbps { get; set; }
+
         private ImageSource? _thumbnail;
         public ImageSource? Thumbnail
         {
@@ -43,7 +46,9 @@ namespace DriveCrawl_Win32_App
             Extension = m.Extension,
             FileSize = m.FileSize,
             CreatedAt = m.CreatedAt,
-            Priority = m.Priority
+            Priority = m.Priority,
+            Duration = m.Duration,
+            BitrateKbps = m.BitrateKbps
         };
     }
 

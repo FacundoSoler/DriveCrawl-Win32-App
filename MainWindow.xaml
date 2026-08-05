@@ -129,7 +129,7 @@
 
     </Window.Resources>
 
-    <Grid>
+    <Grid Grid.IsSharedSizeScope="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -145,7 +145,7 @@
                 Padding="16,10">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn" />
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -155,21 +155,16 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Title -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="DriveCrawl" FontSize="17" FontWeight="Bold"
-                               Foreground="#E8ECF4" VerticalAlignment="Center"/>
-                    <Border Background="#1E2536" CornerRadius="3"
-                            Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text=".NET 10" FontSize="10"
-                                   Foreground="#4A9EFF" FontWeight="SemiBold"/>
-                    </Border>
-                </StackPanel>
+                <!-- Main search -->
+                <TextBlock Text="Search:"
+                   Foreground="#7A8499" FontSize="12"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,0"/>
 
                 <!-- Search box -->
                 <TextBox x:Name="TxtSearch"
                          Grid.Column="1"
-                         Margin="20,0,20,0"
+                         Margin="0,0,20,0"
                          Height="36"
                          FontSize="13"
                          Foreground="#E8ECF4"
@@ -195,8 +190,8 @@
                           BorderBrush="#2A3048"
                           BorderThickness="1"
                           Padding="8,0">
-                    <ComboBoxItem Content="All Files" IsSelected="True"/>
-                    <ComboBoxItem Content="Videos"/>
+                    <ComboBoxItem Content="All Files" />
+                    <ComboBoxItem Content="Videos" IsSelected="True"/>
                     <ComboBoxItem Content="Photos"/>
                     <ComboBoxItem Content="Other"/>
                 </ComboBox>
@@ -206,7 +201,7 @@
                   Grid.Column="3"
                   Style="{StaticResource DarkCheckBox}"
                   Content="Exact phrase"
-                  Margin="10,0,20,0"
+                  Margin="20,0,10,0"
                   VerticalAlignment="Center"/>
 
                 <!-- Duplicates checkbox -->
@@ -214,7 +209,7 @@
                           Grid.Column="4"
                           Style="{StaticResource DarkCheckBox}"
                           Content="Only duplicates"
-                          Margin="30,0,8,0"
+                          Margin="19,0,19,0"
                           VerticalAlignment="Center"/>
 
                 <!-- Thumbnails checkbox -->
@@ -253,8 +248,54 @@
             </Grid>
         </Border>
 
+        <!-- FILTER BAR (Newly Added) -->
+        <Border Grid.Row="1" Background="#161B27"
+        BorderBrush="#2A3048" BorderThickness="0,0,0,1"
+        Padding="16,10,16,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn" />
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Secondary filter title -->
+                <TextBlock Text="Filter:"
+                   Foreground="#7A8499" FontSize="12"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,0"/>
+
+                <!-- Secondary filter textbox -->
+                <TextBox x:Name="TxtFilter"
+                 Grid.Column="1"
+                 Height="32"
+                 FontSize="13"
+                 Foreground="#E8ECF4"
+                 Background="#1E2536"
+                 BorderBrush="#2A3048"
+                 BorderThickness="1"
+                 Padding="0,0"
+                 VerticalContentAlignment="Center"
+                 CaretBrush="#4A9EFF"
+                 KeyDown="TxtFilter_KeyDown"/>
+
+                <!-- Filter button (optional) -->
+                <Button x:Name="BtnFilter"
+                Grid.Column="2"
+                Width="100" Height="32"
+                Content="Apply Filter"
+                FontSize="13" FontWeight="SemiBold"
+                Foreground="White"
+                Background="#4A9EFF"
+                BorderThickness="0"
+                Cursor="Hand"
+                Margin="8,0,0,0"
+                Click="BtnFilter_Click"/>
+            </Grid>
+        </Border>
+
         <!-- MENU BAR (Delete button) -->
-        <Border Grid.Row="1" Background="#181C29" BorderBrush="#23283A" BorderThickness="0,0,0,1" Padding="12,6">
+        <Border Grid.Row="2" Background="#181C29" BorderBrush="#23283A" BorderThickness="0,0,0,1" Padding="12,6">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <Button x:Name="BtnDeleteSelected"
                         Click="BtnDeleteSelected_Click"
@@ -274,52 +315,6 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
-        </Border>
-
-        <!-- FILTER BAR (Newly Added) -->
-        <Border Grid.Row="2" Background="#161B27"
-                BorderBrush="#2A3048" BorderThickness="0,0,0,1"
-                Padding="16,10,16,6">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Secondary filter title -->
-                <TextBlock Text="Filter by size or type"
-                           Foreground="#7A8499" FontSize="12"
-                           VerticalAlignment="Center"
-                           Margin="0,0,12,0"/>
-
-                <!-- Secondary filter textbox -->
-                <TextBox x:Name="TxtFilter"
-                         Grid.Column="1"
-                         Height="32"
-                         FontSize="13"
-                         Foreground="#E8ECF4"
-                         Background="#1E2536"
-                         BorderBrush="#2A3048"
-                         BorderThickness="1"
-                         Padding="10,0"
-                         VerticalContentAlignment="Center"
-                         CaretBrush="#4A9EFF"
-                         KeyDown="TxtFilter_KeyDown"/>
-
-                <!-- Filter button (optional) -->
-                <Button x:Name="BtnFilter"
-                        Grid.Column="2"
-                        Width="100" Height="32"
-                        Content="Apply Filter"
-                        FontSize="13" FontWeight="SemiBold"
-                        Foreground="White"
-                        Background="#4A9EFF"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="8,0,0,0"
-                        Click="BtnFilter_Click"/>
-            </Grid>
         </Border>
 
         <!-- PROGRESS BAR -->
@@ -389,6 +384,32 @@
                                 <Setter Property="Foreground"        Value="#4A9EFF"/>
                                 <Setter Property="FontFamily"        Value="Consolas"/>
                                 <Setter Property="FontSize"          Value="12"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="BitRate" Width="*"
+                     Binding="{Binding BitrateKbps}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"        Value="#4A5568"/>
+                                <Setter Property="FontFamily"        Value="Consolas"/>
+                                <Setter Property="FontSize"          Value="11"/>
+                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Duration" Width="*"
+                     Binding="{Binding Duration}">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground"        Value="#4A5568"/>
+                                <Setter Property="FontFamily"        Value="Consolas"/>
+                                <Setter Property="FontSize"          Value="11"/>
+                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
                                 <Setter Property="VerticalAlignment" Value="Center"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>

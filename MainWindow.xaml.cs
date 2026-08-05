@@ -68,16 +68,22 @@ namespace DriveCrawl_Win32_App
 
             try
             {
-                var viewModels = await PerformSearchAsync(query, isExactPhrase, dupsOnly, fileTypeFilter, token);
+                var results = await PerformSearchAsync(query, isExactPhrase, dupsOnly, fileTypeFilter, token);
                 token.ThrowIfCancellationRequested();
 
-                if (viewModels.Count > 0)
+                if (results.Item1.Count > 0)
                 {
-                    await AddSearchResultsToUIAsync(viewModels, token);
-                    FinalizeSearchResults(viewModels);
+                    await AddSearchResultsToUIAsync(results.Item1, token);
+                    FinalizeSearchResults(results.Item1);
 
                     if (showThumbs)
-                        await _thumbnailManager.LoadThumbnailsAsync(viewModels, token);
+                        await _thumbnailManager.LoadThumbnailsAsync(results.Item1, token);
+                }
+
+                if (!results.hydrationTask.IsCompleted)
+                {
+                    _timerManager.SetCompletionStatus($"Main Search completed in {_timerManager.GetElapsedSeconds():F2} seconds. Loading video file BitRates... ");
+                    await results.hydrationTask;
                 }
 
                 _timerManager.SetCompletionStatus($"Ready. Search completed in {_timerManager.GetElapsedSeconds():F2} seconds.");
@@ -124,7 +130,7 @@ namespace DriveCrawl_Win32_App
             ResultsGrid.RowHeight = showThumbnails ? GridRowHeightWithThumbnails : GridRowHeight;
         }
 
-        private async Task<List<FileViewModel>> PerformSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
+        private async Task<(List<FileViewModel>, Task hydrationTask)> PerformSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
         {
             try
             {
@@ -135,7 +141,7 @@ namespace DriveCrawl_Win32_App
                 EmptyLabel.Text = ex.Message;
                 EmptyState.Visibility = Visibility.Visible;
                 StatusLabel.Text = "Search failed: No folders configured.";
-                return new List<FileViewModel>();
+                throw;
             }
         }
 

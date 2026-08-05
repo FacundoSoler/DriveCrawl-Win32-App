@@ -1,5 +1,7 @@
 ﻿using DriveCrawl_Win32_App.Models;
+using System.Diagnostics;
 using System.IO;
+using TagLib;
 
 namespace DriveCrawl_Win32_App.Services
 {
@@ -27,7 +29,7 @@ namespace DriveCrawl_Win32_App.Services
 
                 try
                 {
-                    // EnumerateFiles is ideal to avoid saturating RAM if there are thousands of files
+                    // EnumerateFiles es ideal para no saturar la RAM
                     var files = Directory.EnumerateFiles(folder.Path, $"*{query}*", SearchOption.AllDirectories);
 
                     foreach (var filePath in files)
@@ -39,7 +41,7 @@ namespace DriveCrawl_Win32_App.Services
                         if (!MatchesFileTypeFilter(info.Extension, fileTypeFilter))
                             continue;
 
-                        results.Add(new FileModel
+                        var fileModel = new FileModel
                         {
                             FileName = info.Name,
                             FullPath = info.FullName,
@@ -47,12 +49,14 @@ namespace DriveCrawl_Win32_App.Services
                             FileSize = info.Length,
                             CreatedAt = info.CreationTime,
                             Priority = folder.Priority
-                        });
+                        };
+
+                        results.Add(fileModel);
                     }
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    // Ignore protected folders (like System Volume Information)
+                    // Ignora carpetas protegidas (como System Volume Information)
                 }
                 catch (Exception ex)
                 {
@@ -61,6 +65,43 @@ namespace DriveCrawl_Win32_App.Services
             }
 
             return results;
+        }
+
+        public async Task HydrateVideoMetadataAsync(IEnumerable<FileViewModel> files, CancellationToken token)
+        {
+            // Filter only videos that need hydration
+            var videos = files.Where(f => f.Extension == ".mp4" || f.Extension == ".mkv" /* etc */).ToList();
+
+            // Process in parallel with a sensible degree of concurrency to avoid thrashing HDDs
+            var options = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount / 2,
+                CancellationToken = token
+            };
+
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(videos, options, fileModel =>
+                {
+                    try
+                    {
+                        using var tfile = TagLib.File.Create(fileModel.FullPath);
+                        var duration = tfile.Properties.Duration;
+
+                        if (duration.TotalSeconds > 0)
+                        {
+                            // Assuming FileModel implements INotifyPropertyChanged
+                            // These setters will automatically update your WPF UI
+                            fileModel.Duration = duration;
+                            fileModel.BitrateKbps = (int)((fileModel.FileSize * 8) / (duration.TotalSeconds * 1000));
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore locked/corrupted
+                    }
+                });
+            });
         }
 
         private static bool MatchesFileTypeFilter(string extension, FileTypeFilter filter)

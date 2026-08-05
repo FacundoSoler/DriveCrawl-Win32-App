@@ -1,6 +1,7 @@
 using DriveCrawl_Win32_App.Data;
 using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.Services;
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace DriveCrawl_Win32_App
@@ -20,7 +21,7 @@ namespace DriveCrawl_Win32_App
             _searchEngine = searchEngine ?? throw new ArgumentNullException(nameof(searchEngine));
         }
 
-        public async Task<List<FileViewModel>> ExecuteSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
+        public async Task<(List<FileViewModel>, Task hydrationTask)> ExecuteSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
         {
             var folders = await Task.Run(() => _database.GetFolders(), token);
             if (folders.Count == 0)
@@ -51,7 +52,13 @@ namespace DriveCrawl_Win32_App
                 viewModels = await Task.Run(() => FilterByExactWord(viewModels, query), token);
             }
 
-            return viewModels;
+            Task hydrationTask = Task.CompletedTask;
+
+            if (fileTypeFilter == FileTypeFilter.Videos) {
+                hydrationTask = Task.Run(() => _searchEngine.HydrateVideoMetadataAsync(viewModels, token));
+            }
+
+            return (viewModels, hydrationTask);
         }
 
         private async Task<List<FileModel>> RunSearchAsync(List<WatchedFolders> folders, string query, FileTypeFilter fileTypeFilter, CancellationToken token)
