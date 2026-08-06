@@ -9,7 +9,19 @@ namespace DriveCrawl_Win32_App
     public class FileViewModel : INotifyPropertyChanged
     {
         public int Id { get; set; }
-        public string FullPath { get; set; } = "";
+        private string _fullPath = string.Empty;
+        public string FullPath
+        {
+            get => _fullPath;
+            set
+            {
+                if (_fullPath != value)
+                {
+                    _fullPath = value;
+                    OnPropertyChanged(nameof(FullPath));
+                }
+            }
+        }
         public string FileName { get; set; } = "";
         public string Extension { get; set; } = "";
         public long FileSize { get; set; }

@@ -9,6 +9,44 @@
 
     <Window.Resources>
 
+        <Style x:Key="DarkButtonStyle" TargetType="Button">
+            <!-- Default / Enabled State -->
+            <Setter Property="Background" Value="#10B981"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="3">
+                            <ContentPresenter x:Name="contentPresenter"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Disabled State Colors -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#1F2430"/>
+                                <Setter Property="Foreground" Value="#4A5568"/>
+                            </Trigger>
+                            <!-- Hover State (Optional) -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#059669"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <SolidColorBrush x:Key="P1Green"  Color="#22C55E"/>
         <SolidColorBrush x:Key="P2Blue"   Color="#3B82F6"/>
         <SolidColorBrush x:Key="P3Yellow" Color="#EAB308"/>
@@ -297,21 +335,50 @@
         <!-- MENU BAR (Delete button) -->
         <Border Grid.Row="2" Background="#181C29" BorderBrush="#23283A" BorderThickness="0,0,0,1" Padding="12,6">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+
                 <Button x:Name="BtnDeleteSelected"
-                        Click="BtnDeleteSelected_Click"
-                        Margin="0,0,8,0"
-                        Padding="8,2"
-                        VerticalAlignment="Center"
-                        IsEnabled="False"
-                        Background="#EF4444" Foreground="Black" BorderThickness="0" Cursor="Hand">
+                    Style="{StaticResource DarkButtonStyle}"
+                    IsEnabled="False"
+                    Width="100" Height="32"
+                    Foreground="White"
+                    Background="#EF4444"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Margin="8,0,0,0"
+                    Click="BtnDeleteSelected_Click">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Viewbox Width="16" Height="16" VerticalAlignment="Center">
                             <Canvas Width="24" Height="24">
                                 <Path Data="M3,6 L5,6 L21,6 M19,6 L17.5,19.5 C17.4,20.3 16.7,21 15.9,21 L8.1,21 C7.3,21 6.6,20.3 6.5,19.5 L5,6 M10,11 L10,17 M14,11 L14,17"
-                                      Stroke="White" StrokeThickness="2"/>
+                                Stroke="White" StrokeThickness="2"/>
                             </Canvas>
                         </Viewbox>
                         <TextBlock Text="Delete" Margin="6,0,0,0" FontWeight="SemiBold" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="BtnMove"
+                Style="{StaticResource DarkButtonStyle}"
+                IsEnabled="False"
+                Width="100" Height="32"
+                Foreground="White"
+                Background="#3B82F6"
+                BorderThickness="0"
+                Cursor="Hand"
+                Margin="8,0,0,0"
+                Click="BtnMove_Click">  
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Viewbox Width="16" Height="16" VerticalAlignment="Center">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M4,12 H20 M14,6 L20,12 L14,18"
+                                  Stroke="White"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"/>
+                            </Canvas>
+                        </Viewbox>
+                        <TextBlock Text="Move" Margin="6,0,0,0" FontWeight="SemiBold" FontSize="13"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -330,15 +397,21 @@
         <!-- RESULTS -->
         <Border Grid.Row="4" Background="#0F1117">
             <DataGrid x:Name="ResultsGrid"
-                      MouseDoubleClick="ResultsGrid_MouseDoubleClick"
                       AutoGenerateColumns="False">
                 <DataGrid.Columns>
-                    <!-- Select column -->
-                    <DataGridTemplateColumn Header="Select" Width="48">
+                    <!-- Select column with Select All Header -->
+                    <DataGridTemplateColumn Width="48">
+                        <DataGridTemplateColumn.Header>
+                            <CheckBox x:Name="ChkSelectAll"
+                              Style="{StaticResource DarkCheckBox}"
+                              Click="ChkSelectAll_Click"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          Checked="SelectCheckBox_Checked" Unchecked="SelectCheckBox_Unchecked"/>
+                                 Click="SelectFileCheckBox_Click"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -352,15 +425,13 @@
                                             CellTemplate="{StaticResource ThumbnailTemplate}"
                                             Visibility="Collapsed"/>
 
-                    <DataGridTextColumn Header="FILENAME" Width="220"
-                                        Binding="{Binding FileName}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground"        Value="#E8ECF4"/>
-                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
+                    <DataGridTextColumn Header="File Name" Binding="{Binding FileName}">
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
                             </Style>
-                        </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn.CellStyle>
                     </DataGridTextColumn>
 
                     <DataGridTextColumn x:Name="ColSize"
@@ -479,4 +550,6 @@
         </Border>
 
     </Grid>
+    
+    
 </Window>

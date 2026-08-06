@@ -18,7 +18,7 @@ namespace DriveCrawl_Win32_App
         private readonly SearchResultsManager _resultsManager;
         private readonly SearchTimerManager _timerManager;
         private readonly ThumbnailManager _thumbnailManager;
-        private readonly FileDeleteManager _deleteManager;
+        private readonly FileActionsManager _fileActionsManager;
 
         private CancellationTokenSource? _searchCts;
         private bool _isOperationInProgress;
@@ -37,8 +37,8 @@ namespace DriveCrawl_Win32_App
                 _results, StatusLabel, ResultCount, TotalSizeLabel, EmptyLabel, EmptyState);
             _timerManager = new SearchTimerManager(StatusLabel);
             _thumbnailManager = new ThumbnailManager(ThumbnailCounter);
-            _deleteManager = new FileDeleteManager(_results);
-            _deleteManager.DeletionStatusChanged += UpdateDeleteButtonState;
+            _fileActionsManager = new FileActionsManager(_results);
+            _fileActionsManager.OperationCompleted += ShowHideActionButtons;
         }
 
         #region Search Orchestration
@@ -209,15 +209,6 @@ namespace DriveCrawl_Win32_App
 
         #region File Operations
 
-        private void DeleteSelectedFiles()
-        {
-            var selected = _resultsManager.GetSelectedResults();
-            if (selected.Count > 0)
-            {
-                _ = _deleteManager.DeleteSelectedFilesAsync(selected);
-            }
-        }
-
         #endregion
 
         #region Event Handlers - Search
@@ -265,7 +256,7 @@ namespace DriveCrawl_Win32_App
 
         #region Event Handlers - Grid
 
-        private void ResultsGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void FileNameCell_DoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ResultsGrid.SelectedItem is FileViewModel file)
                 FileSystemOperations.OpenFileWithDefaultProgram(file.FullPath);
@@ -275,24 +266,62 @@ namespace DriveCrawl_Win32_App
 
         #region Event Handlers - File Management
 
-        private void SelectCheckBox_Checked(object sender, RoutedEventArgs e)
+        private void SelectFileCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            UpdateDeleteButtonState();
+            ShowHideActionButtons();
         }
 
-        private void SelectCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            UpdateDeleteButtonState();
+        private void ChkSelectAll_Click(object sender, RoutedEventArgs e)
+        {      
+            if (sender is CheckBox chkSelectAll && chkSelectAll.IsChecked.HasValue)
+            {
+                bool isChecked = chkSelectAll.IsChecked.Value;
+
+                foreach (var file in _results)
+                {
+                    file.IsSelected = isChecked;
+                }
+            }
+            ShowHideActionButtons();
         }
 
-        private void UpdateDeleteButtonState()
+        private void ShowHideActionButtons()
         {
-            BtnDeleteSelected.IsEnabled = _results.Any(f => f.IsSelected);
+            var checkedItems = _results.Any(f => f.IsSelected);
+            if (checkedItems) {
+                BtnDeleteSelected.IsEnabled = true;
+                BtnMove.IsEnabled = true;
+            }
+            else {
+                BtnDeleteSelected.IsEnabled = false;
+                BtnMove.IsEnabled = false;
+            }        
         }
 
         private void BtnDeleteSelected_Click(object sender, RoutedEventArgs e)
         {
-            DeleteSelectedFiles();
+            var selected = _resultsManager.GetSelectedResults();
+            if (selected.Count == 0) return;
+
+            _ = _fileActionsManager.DeleteSelectedFilesAsync(selected);
+        }
+
+        private async void BtnMove_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = _resultsManager.GetSelectedResults();
+            if (selected.Count == 0) return;
+
+            var dialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "Select Destination Folder",
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string destinationPath = dialog.FolderName;
+                await _fileActionsManager.MoveSelectedFilesAsync(selected, destinationPath);
+            }
         }
 
         private void ShowInExplorerMenuItem_Click(object sender, RoutedEventArgs e)
