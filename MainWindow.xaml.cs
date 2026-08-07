@@ -2,6 +2,7 @@ using DriveCrawl_Win32_App.Data;
 using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.Services;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -26,8 +27,16 @@ namespace DriveCrawl_Win32_App
         private const int GridRowHeight = 38;
         private const int GridRowHeightWithThumbnails = 116;
 
+        public enum Operator
+        {
+            Equals,
+            GreaterThan,
+            LessThan
+        }
+
         public MainWindow()
         {
+            ModernWpf.ThemeManager.SetRequestedTheme(this, ModernWpf.ElementTheme.Dark);
             InitializeComponent();
             ResultsGrid.ItemsSource = _results;
             ColSize.Binding = new Binding("FileSize") { Converter = new FileSizeConverter() };
@@ -40,10 +49,6 @@ namespace DriveCrawl_Win32_App
             _fileActionsManager = new FileActionsManager(_results);
             _fileActionsManager.OperationCompleted += ShowHideActionButtons;
         }
-
-        #region Search Orchestration
-
-        #endregion
 
         #region Main Search Entry Point
 
@@ -202,7 +207,30 @@ namespace DriveCrawl_Win32_App
 
         private void ApplyFilter()
         {
-            _resultsManager.ApplyFilter(TxtFilter.Text);
+            var selectedBitrateOp = Operator.Equals;
+            if (CmbBitrateOp.SelectedItem is ComboBoxItem selectedItem)
+            {
+                selectedBitrateOp = selectedItem.Tag?.ToString() switch
+                {
+                    "GreaterThan" => Operator.GreaterThan,
+                    "LessThan" => Operator.LessThan,
+                    _ => Operator.Equals
+                };
+            }
+
+            var selectedVideoHeightOp = Operator.Equals;
+            if (CmbVideoHeightOp.SelectedItem is ComboBoxItem selectedVideoHeightItem)
+            {
+                selectedVideoHeightOp = selectedVideoHeightItem.Tag?.ToString() switch
+                {
+                    "GreaterThan" => Operator.GreaterThan,
+                    "LessThan" => Operator.LessThan,
+                    _ => Operator.Equals
+                };
+            }
+
+            string videoHeightValue = CmbResolution.Text;
+            _resultsManager.ApplyFilter(TxtFilter.Text, TxtBitRate.Text, selectedBitrateOp, videoHeightValue, selectedVideoHeightOp);
         }
 
         #endregion
@@ -244,6 +272,24 @@ namespace DriveCrawl_Win32_App
             {
                 ApplyFilter();
                 e.Handled = true;
+            }
+        }
+
+        private void TxtBitrate_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                ApplyFilter();
+                e.Handled = true;
+            }
+        }
+
+        private void TxtBitRate_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox tb)
+            {
+                tb.Text = Regex.Replace(tb.Text, "[^0-9]", "");
+                tb.CaretIndex = tb.Text.Length; // Keep cursor at the end
             }
         }
 

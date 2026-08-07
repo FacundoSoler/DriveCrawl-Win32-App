@@ -69,9 +69,6 @@ namespace DriveCrawl_Win32_App.Services
 
         public async Task HydrateVideoMetadataAsync(IEnumerable<FileViewModel> files, CancellationToken token)
         {
-            // Filter only videos that need hydration
-            var videos = files.Where(f => f.Extension == ".mp4" || f.Extension == ".mkv" /* etc */).ToList();
-
             // Process in parallel with a sensible degree of concurrency to avoid thrashing HDDs
             var options = new ParallelOptions
             {
@@ -81,19 +78,18 @@ namespace DriveCrawl_Win32_App.Services
 
             await Task.Run(() =>
             {
-                Parallel.ForEach(videos, options, fileModel =>
+                Parallel.ForEach(files, options, fileModel =>
                 {
                     try
                     {
                         using var tfile = TagLib.File.Create(fileModel.FullPath);
                         var duration = tfile.Properties.Duration;
-
                         if (duration.TotalSeconds > 0)
                         {
-                            // Assuming FileModel implements INotifyPropertyChanged
-                            // These setters will automatically update your WPF UI
                             fileModel.Duration = duration;
                             fileModel.BitrateKbps = (int)((fileModel.FileSize * 8) / (duration.TotalSeconds * 1000));
+                            fileModel.VideoHeight = tfile.Properties.VideoHeight;
+                            fileModel.VideoWidth = tfile.Properties.VideoWidth;
                         }
                     }
                     catch

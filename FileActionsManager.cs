@@ -77,8 +77,7 @@ namespace DriveCrawl_Win32_App
                 {
                     if (!File.Exists(file.FullPath)) continue;
 
-                    string newPath = Path.Combine(destinationFolder, file.FileName + file.Extension);
-
+                    string newPath = Path.Combine(destinationFolder, file.FileName);
                     if (File.Exists(newPath))
                     {
                         failedFiles.Add((file.FullPath, "File already exists at destination."));

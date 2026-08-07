@@ -22,6 +22,39 @@ namespace DriveCrawl_Win32_App
                 }
             }
         }
+        private string _videoResolution = string.Empty;
+        private int _videoHeight = 0;
+        public int VideoHeight
+        {
+            get => _videoHeight;
+            set
+            {
+                if (_videoHeight != value)
+                {
+                    _videoHeight = value;
+                    OnPropertyChanged(nameof(VideoHeight));
+                }
+            }
+        }
+
+        private int _videoWidth = 0;
+        public int VideoWidth
+        {
+            get => _videoWidth;
+            set
+            {
+                if (_videoWidth != value)
+                {
+                    _videoWidth = value;
+                    OnPropertyChanged(nameof(VideoWidth));
+                }
+            }
+        }
+
+        public string VideoResolution
+        {
+            get => $"{VideoWidth}x{VideoHeight}";
+        }
         public string FileName { get; set; } = "";
         public string Extension { get; set; } = "";
         public long FileSize { get; set; }

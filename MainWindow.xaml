@@ -5,7 +5,8 @@
         MinHeight="520" MinWidth="800"
         Background="#0F1117"
         Icon="Resources/app_icon.ico"
-        FontFamily="Segoe UI">
+        FontFamily="Segoe UI"
+        WindowState="Maximized">
 
     <Window.Resources>
 
@@ -199,7 +200,6 @@
                    VerticalAlignment="Center"
                    Margin="0,0,10,0"/>
 
-                <!-- Search box -->
                 <TextBox x:Name="TxtSearch"
                          Grid.Column="1"
                          Margin="0,0,20,0"
@@ -216,25 +216,25 @@
 
                 <!-- File type filter ComboBox -->
                 <ComboBox x:Name="CmbFileType"
-                          Grid.Column="2"
-                          Width="120"
-                          Height="36"
-                          Margin="0,0,20,0"
-                          FontSize="13"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Foreground="Black"
-                          Background="#1E2536"
-                          BorderBrush="#2A3048"
-                          BorderThickness="1"
-                          Padding="8,0">
+                  Grid.Column="2"
+                  Width="120"
+                  Height="36"
+                  Margin="0,0,20,0"
+                  FontSize="13"
+                  VerticalAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Foreground="#E8ECF4"
+                  Background="#1E2536"
+                  BorderBrush="#2A3048"
+                  BorderThickness="1"
+                  Padding="8,0">
                     <ComboBoxItem Content="All Files" />
-                    <ComboBoxItem Content="Videos" IsSelected="True"/>
-                    <ComboBoxItem Content="Photos"/>
-                    <ComboBoxItem Content="Other"/>
+                    <ComboBoxItem Content="Videos" IsSelected="True" />
+                    <ComboBoxItem Content="Photos" />
+                    <ComboBoxItem Content="Other" />
                 </ComboBox>
 
-                <!-- Duplicates checkbox -->
+                <!-- Exact Phrase checkbox -->
                 <CheckBox x:Name="ChkExactPhrase"
                   Grid.Column="3"
                   Style="{StaticResource DarkCheckBox}"
@@ -290,23 +290,16 @@
         <Border Grid.Row="1" Background="#161B27"
         BorderBrush="#2A3048" BorderThickness="0,0,0,1"
         Padding="16,10,16,6">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn" />
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
 
-                <!-- Secondary filter title -->
                 <TextBlock Text="Filter:"
                    Foreground="#7A8499" FontSize="12"
                    VerticalAlignment="Center"
                    Margin="0,0,10,0"/>
 
-                <!-- Secondary filter textbox -->
                 <TextBox x:Name="TxtFilter"
-                 Grid.Column="1"
                  Height="32"
+                 Width="100"
                  FontSize="13"
                  Foreground="#E8ECF4"
                  Background="#1E2536"
@@ -317,9 +310,85 @@
                  CaretBrush="#4A9EFF"
                  KeyDown="TxtFilter_KeyDown"/>
 
-                <!-- Filter button (optional) -->
+                <!-- Bitrate filter -->
+                <TextBlock Text="Bitrate:"
+                  Foreground="#7A8499" FontSize="12"
+                  VerticalAlignment="Center"
+                  Margin="30,0,10,0"/>
+
+                <ComboBox x:Name="CmbBitrateOp"
+                  Width="50" Height="32"
+                  SelectedIndex="0"
+                  FontSize="13" FontWeight="Bold"
+                  Foreground="#E8ECF4"
+                  Background="#1E2536"
+                  BorderBrush="#2A3048"
+                  BorderThickness="1"
+                  VerticalContentAlignment="Center"
+                  HorizontalContentAlignment="Center"
+                  Margin="0,0,4,0">
+                    <ComboBoxItem Content="=" Tag="Equals" />
+                    <ComboBoxItem Content="&gt;" Tag="GreaterThan" IsSelected="True" />
+                    <ComboBoxItem Content="&lt;" Tag="LessThan" />
+                </ComboBox>
+
+                <TextBox x:Name="TxtBitRate"
+                 Height="32"
+                 Width="100"
+                 FontSize="13"
+                 Foreground="#E8ECF4"
+                 Background="#1E2536"
+                 BorderBrush="#2A3048"
+                 BorderThickness="1"
+                 Padding="10,0"
+                 VerticalContentAlignment="Center"
+                 CaretBrush="#4A9EFF"
+                 TextChanged="TxtBitRate_TextChanged"
+                 KeyDown="TxtBitrate_KeyDown"/>
+
+                <!-- Bitrate filter -->
+                <TextBlock Text="Resolution:"
+                  Foreground="#7A8499" FontSize="12"
+                  VerticalAlignment="Center"
+                  Margin="30,0,10,0"/>
+
+                <ComboBox x:Name="CmbVideoHeightOp"
+                  Width="50" Height="32"
+                  SelectedIndex="0"
+                  FontSize="13" FontWeight="Bold"
+                  Foreground="#E8ECF4"
+                  Background="#1E2536"
+                  BorderBrush="#2A3048"
+                  BorderThickness="1"
+                  VerticalContentAlignment="Center"
+                  HorizontalContentAlignment="Center"
+                  Margin="0,0,4,0">
+                    <ComboBoxItem Content="=" Tag="Equals" IsSelected="True" />
+                    <ComboBoxItem Content="&gt;" Tag="GreaterThan" />
+                    <ComboBoxItem Content="&lt;" Tag="LessThan" />
+                </ComboBox>
+
+                <ComboBox x:Name="CmbResolution"
+                   Width="100" Height="32"
+                   SelectedIndex="0"
+                   FontSize="13" FontWeight="Bold"
+                   Foreground="#E8ECF4"
+                   Background="#1E2536"
+                   BorderBrush="#2A3048"
+                   BorderThickness="1"
+                   VerticalContentAlignment="Center"
+                   HorizontalContentAlignment="Center"
+                   Margin="0,0,4,0">
+                    <ComboBoxItem Content="ALL" IsSelected="True" />
+                    <ComboBoxItem Content="1080" />
+                    <ComboBoxItem Content="720" />
+                    <ComboBoxItem Content="480" />
+                    <ComboBoxItem Content="360" />
+                    <ComboBoxItem Content="240" />
+                </ComboBox>
+
+                <!-- Apply Filter button -->
                 <Button x:Name="BtnFilter"
-                Grid.Column="2"
                 Width="100" Height="32"
                 Content="Apply Filter"
                 FontSize="13" FontWeight="SemiBold"
@@ -327,9 +396,9 @@
                 Background="#4A9EFF"
                 BorderThickness="0"
                 Cursor="Hand"
-                Margin="8,0,0,0"
+                Margin="20, 0, 0, 0"
                 Click="BtnFilter_Click"/>
-            </Grid>
+            </StackPanel>
         </Border>
 
         <!-- MENU BAR (Delete button) -->
@@ -421,11 +490,11 @@
 
                     <!-- Thumbnail column - visibility toggled from code-behind -->
                     <DataGridTemplateColumn x:Name="ColThumbnail"
-                                            Header="PREV" Width="96"
+                                            Header="PREV" Width="Auto"
                                             CellTemplate="{StaticResource ThumbnailTemplate}"
                                             Visibility="Collapsed"/>
 
-                    <DataGridTextColumn Header="File Name" Binding="{Binding FileName}">
+                    <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" Width="500">
                         <DataGridTextColumn.CellStyle>
                             <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                                 <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -435,68 +504,64 @@
                     </DataGridTextColumn>
 
                     <DataGridTextColumn x:Name="ColSize"
-                                        Header="SIZE" Width="90"
+                                        Header="SIZE" Width="Auto"
                                         Binding="{Binding FileSize}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground"          Value="#7A8499"/>
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="VerticalAlignment"   Value="Center"/>
-                                <Setter Property="FontFamily"          Value="Consolas"/>
-                                <Setter Property="FontSize"            Value="12"/>
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
                             </Style>
-                        </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn.CellStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="EXT" Width="60"
+                    <DataGridTextColumn Header="EXT" Width="Auto"
                                         Binding="{Binding Extension}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground"        Value="#4A9EFF"/>
-                                <Setter Property="FontFamily"        Value="Consolas"/>
-                                <Setter Property="FontSize"          Value="12"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
                             </Style>
-                        </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn.CellStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="BitRate" Width="*"
+                    <DataGridTextColumn Header="BitRate" Width="Auto"
                      Binding="{Binding BitrateKbps}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground"        Value="#4A5568"/>
-                                <Setter Property="FontFamily"        Value="Consolas"/>
-                                <Setter Property="FontSize"          Value="11"/>
-                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
                             </Style>
-                        </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn.CellStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Duration" Width="*"
-                     Binding="{Binding Duration}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground"        Value="#4A5568"/>
-                                <Setter Property="FontFamily"        Value="Consolas"/>
-                                <Setter Property="FontSize"          Value="11"/>
-                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
+                    <DataGridTextColumn Header="Duration" Width="Auto"
+                     Binding="{Binding Duration, StringFormat={}{0:hh\\:mm\\:ss}}">
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
                             </Style>
-                        </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn.CellStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="FULL PATH" Width="*"
+                    <DataGridTextColumn Header="Resolution" Width="Auto"
+                    Binding="{Binding VideoResolution}">
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
+                            </Style>
+                        </DataGridTextColumn.CellStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="FULL PATH" Width="Auto"
                                         Binding="{Binding FullPath}">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground"        Value="#4A5568"/>
-                                <Setter Property="FontFamily"        Value="Consolas"/>
-                                <Setter Property="FontSize"          Value="11"/>
-                                <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
-                                <Setter Property="VerticalAlignment" Value="Center"/>
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <EventSetter Event="MouseDoubleClick" Handler="FileNameCell_DoubleClick"/>
                             </Style>
-                        </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn.CellStyle>
                     </DataGridTextColumn>
 
                 </DataGrid.Columns>

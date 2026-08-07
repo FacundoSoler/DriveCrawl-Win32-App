@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using static DriveCrawl_Win32_App.MainWindow;
 
 namespace DriveCrawl_Win32_App
 {
@@ -49,29 +50,79 @@ namespace DriveCrawl_Win32_App
             UpdateResultCountAndSize(0, 0);
         }
 
-        public void ApplyFilter(string filterText)
+        public void ApplyFilter(string filterText, string bitrateText, Operator bitrateOperator, string videoHeight, Operator videoHeightOperator)
         {
-            string normalized = filterText.Trim().ToLowerInvariant();
+            string normalizedFilter = filterText?.Trim().ToLowerInvariant() ?? string.Empty;
+            string normalizedBitrate = bitrateText?.Trim() ?? string.Empty;
+            int videoHeightParsedValue;
+            int.TryParse(videoHeight, out videoHeightParsedValue);
 
-            if (string.IsNullOrEmpty(normalized))
+            bool isBitrateFilterActive = int.TryParse(normalizedBitrate, out int targetBitrate);
+            bool isVideoResolutionFilterActive = int.TryParse(videoHeight, out int targetVideoHeight);
+
+            if (string.IsNullOrEmpty(normalizedFilter) && !isBitrateFilterActive && !isVideoResolutionFilterActive)
             {
                 RefreshResultsDisplay(_originalSearchResults);
+                _emptyState.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var filtered = _originalSearchResults.Where(f =>
+            {
+                bool matchesName = string.IsNullOrEmpty(normalizedFilter) ||
+                                   (f.FileName != null && f.FileName.ToLowerInvariant().Contains(normalizedFilter));
+
+                bool matchesBitrate = true;
+                if (isBitrateFilterActive)
+                {
+                    if (!f.BitrateKbps.HasValue)
+                    {
+                        matchesBitrate = false;
+                    }
+                    else
+                    {
+                        int fileBitrate = f.BitrateKbps.Value;
+                        matchesBitrate = bitrateOperator switch
+                        {
+                            Operator.GreaterThan => fileBitrate > targetBitrate,
+                            Operator.LessThan => fileBitrate < targetBitrate,
+                            Operator.Equals => fileBitrate == targetBitrate,
+                            _ => true
+                        };
+                    }
+                }
+
+                bool matchesResolution = true;
+                if (isVideoResolutionFilterActive && videoHeightParsedValue > 0) {
+                    if (f.VideoHeight == 0)
+                    {
+                        matchesResolution = false;
+                    }
+                    else {
+                        int fileVideoHeightValue = f.VideoHeight;
+                        matchesResolution = videoHeightOperator switch
+                        {
+                            Operator.GreaterThan => fileVideoHeightValue >= videoHeightParsedValue,
+                            Operator.LessThan => fileVideoHeightValue <= videoHeightParsedValue,
+                            Operator.Equals => fileVideoHeightValue == videoHeightParsedValue,
+                            _ => true
+                        };
+                    }
+                }
+
+                return matchesName && matchesBitrate && matchesResolution;
+            }).ToList();
+
+            RefreshResultsDisplay(filtered);
+
+            if (filtered.Count == 0)
+            {
+                _filterPlaceholderLabel.Text = "No results match the current filter criteria.";
+                _emptyState.Visibility = Visibility.Visible;
             }
             else
             {
-                var filtered = _originalSearchResults
-                    .Where(f => f.FileName.ToLowerInvariant().Contains(normalized)
-                             || f.Extension.ToLowerInvariant().Contains(normalized)
-                             || f.FullPath.ToLowerInvariant().Contains(normalized))
-                    .ToList();
-
-                RefreshResultsDisplay(filtered);
-
-                if (filtered.Count == 0)
-                {
-                    _filterPlaceholderLabel.Text = $"No results match the filter: {filterText}";
-                    _emptyState.Visibility = Visibility.Visible;
-                }
+                _emptyState.Visibility = Visibility.Collapsed;
             }
         }
 
