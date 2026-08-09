@@ -53,7 +53,9 @@ namespace DriveCrawl_Win32_App
 
         public string VideoResolution
         {
-            get => $"{VideoWidth}x{VideoHeight}";
+            get {
+                return VideoHeight == 0 ? "" : $"{VideoWidth}x{VideoHeight}";
+            }
         }
         public string FileName { get; set; } = "";
         public string Extension { get; set; } = "";

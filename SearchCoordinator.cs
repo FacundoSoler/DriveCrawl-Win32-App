@@ -21,13 +21,13 @@ namespace DriveCrawl_Win32_App
             _searchEngine = searchEngine ?? throw new ArgumentNullException(nameof(searchEngine));
         }
 
-        public async Task<(List<FileViewModel>, Task hydrationTask)> ExecuteSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
+        public async Task<(List<FileViewModel>, Task hydrationTask)> ExecuteSearchAsync(List<WatchedFolders> selectedWatchedFolders, string query, bool isExactPhrase, 
+            bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter = FileTypeFilter.AllFiles, CancellationToken token = default)
         {
-            var folders = await Task.Run(() => _database.GetFolders(), token);
-            if (folders.Count == 0)
+            if (selectedWatchedFolders.Count == 0)
                 throw new InvalidOperationException("No folders configured in the database.");
 
-            var foundFiles = await RunSearchAsync(folders, query, fileTypeFilter, token);
+            var foundFiles = await RunSearchAsync(selectedWatchedFolders, query, fileTypeFilter, token);
             token.ThrowIfCancellationRequested();
 
             if (includeDuplicatesOnly)

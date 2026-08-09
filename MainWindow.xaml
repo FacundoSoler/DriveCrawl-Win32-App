@@ -182,18 +182,7 @@
         <Border Grid.Row="0" Background="#161B27"
                 BorderBrush="#2A3048" BorderThickness="0,0,0,1"
                 Padding="16,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelColumn" />
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
+            <StackPanel Orientation="Horizontal">
                 <!-- Main search -->
                 <TextBlock Text="Search:"
                    Foreground="#7A8499" FontSize="12"
@@ -201,9 +190,9 @@
                    Margin="0,0,10,0"/>
 
                 <TextBox x:Name="TxtSearch"
-                         Grid.Column="1"
                          Margin="0,0,20,0"
                          Height="36"
+                         Width="300"
                          FontSize="13"
                          Foreground="#E8ECF4"
                          Background="#1E2536"
@@ -214,9 +203,8 @@
                          CaretBrush="#4A9EFF"
                          KeyDown="TxtSearch_KeyDown"/>
 
-                <!-- File type filter ComboBox -->
+                <!-- File Type filter ComboBox -->
                 <ComboBox x:Name="CmbFileType"
-                  Grid.Column="2"
                   Width="120"
                   Height="36"
                   Margin="0,0,20,0"
@@ -227,16 +215,54 @@
                   Background="#1E2536"
                   BorderBrush="#2A3048"
                   BorderThickness="1"
-                  Padding="8,0">
-                    <ComboBoxItem Content="All Files" />
-                    <ComboBoxItem Content="Videos" IsSelected="True" />
-                    <ComboBoxItem Content="Photos" />
-                    <ComboBoxItem Content="Other" />
+                  Padding="8,0" SelectionChanged="CmbFileType_SelectionChanged">
+                    <ComboBoxItem Content="All Files" Tag="All" />
+                    <ComboBoxItem Content="Videos" Tag="Videos" />
+                    <ComboBoxItem Content="Photos" Tag="Photos" />
+                    <ComboBoxItem Content="Other (Non-multimedia)" Tag="Other" />
                 </ComboBox>
+
+                <!-- Drive Paths selection -->
+                <ToggleButton x:Name="BtnDrivePathsToggle"
+                  Width="120" Height="36" Margin="0,0,20,0"
+                  Content="Drive Paths"
+                  FontSize="13" FontWeight="Bold"
+                  Foreground="#E8ECF4"
+                  Background="#1E2536"
+                  BorderBrush="#2A3048"
+                  BorderThickness="1"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+                <!-- The Drive Paths Popup containing the checkbox list -->
+                <Popup IsOpen="{Binding IsChecked, ElementName=BtnDrivePathsToggle, Mode=TwoWay}"
+                   PlacementTarget="{Binding ElementName=BtnDrivePathsToggle}"
+                   Placement="Bottom"
+                   StaysOpen="False"
+                   MinWidth="{Binding ActualWidth, ElementName=BtnDrivePathsToggle}"
+                   DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                        <Border Background="#1E2536" BorderBrush="#2A3048" 
+                                BorderThickness="1" MaxHeight="400" MinHeight="50">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ListBox ItemsSource="{Binding DrivePathsList}"
+                                 Background="Transparent"
+                                 Foreground="#E8ECF4"
+                                 BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Path}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Foreground="#E8ECF4"
+                                              Margin="4,4,4,4"/>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </ScrollViewer>
+                        </Border>
+                </Popup>
 
                 <!-- Exact Phrase checkbox -->
                 <CheckBox x:Name="ChkExactPhrase"
-                  Grid.Column="3"
                   Style="{StaticResource DarkCheckBox}"
                   Content="Exact phrase"
                   Margin="20,0,10,0"
@@ -244,7 +270,6 @@
 
                 <!-- Duplicates checkbox -->
                 <CheckBox x:Name="ChkDuplicates"
-                          Grid.Column="4"
                           Style="{StaticResource DarkCheckBox}"
                           Content="Only duplicates"
                           Margin="19,0,19,0"
@@ -252,7 +277,6 @@
 
                 <!-- Thumbnails checkbox -->
                 <CheckBox x:Name="ChkThumbnails"
-                          Grid.Column="5"
                           Style="{StaticResource DarkCheckBox}"
                           Content="Show Thumbnails"
                           Margin="0,0,14,0"
@@ -260,7 +284,6 @@
 
                 <!-- Search button -->
                 <Button x:Name="BtnSearch"
-                        Grid.Column="6"
                         Width="100" Height="36"
                         Content="Search"
                         FontSize="13" FontWeight="SemiBold"
@@ -272,7 +295,6 @@
 
                 <!-- Stop button (hidden by default) -->
                 <Button x:Name="BtnStop"
-                        Grid.Column="6"
                         Width="100" Height="36"
                         Content="Stop"
                         FontSize="13" FontWeight="SemiBold"
@@ -283,7 +305,7 @@
                         Margin="8,0,0,0"
                         Visibility="Collapsed"
                         Click="BtnStop_Click"/>
-            </Grid>
+            </StackPanel>
         </Border>
 
         <!-- FILTER BAR (Newly Added) -->
@@ -299,7 +321,7 @@
 
                 <TextBox x:Name="TxtFilter"
                  Height="32"
-                 Width="100"
+                 Width="300"
                  FontSize="13"
                  Foreground="#E8ECF4"
                  Background="#1E2536"
@@ -310,13 +332,15 @@
                  CaretBrush="#4A9EFF"
                  KeyDown="TxtFilter_KeyDown"/>
 
-                <!-- Bitrate filter -->
-                <TextBlock Text="Bitrate:"
+                <!-- VideoFilters controls -->
+                <StackPanel x:Name="PanelVideoFilters" Orientation="Horizontal" Visibility="Collapsed">
+                    <!-- Bitrate filter -->
+                    <TextBlock Text="Bitrate:"
                   Foreground="#7A8499" FontSize="12"
                   VerticalAlignment="Center"
                   Margin="30,0,10,0"/>
 
-                <ComboBox x:Name="CmbBitrateOp"
+                    <ComboBox x:Name="CmbBitrateOp"
                   Width="50" Height="32"
                   SelectedIndex="0"
                   FontSize="13" FontWeight="Bold"
@@ -327,12 +351,12 @@
                   VerticalContentAlignment="Center"
                   HorizontalContentAlignment="Center"
                   Margin="0,0,4,0">
-                    <ComboBoxItem Content="=" Tag="Equals" />
-                    <ComboBoxItem Content="&gt;" Tag="GreaterThan" IsSelected="True" />
-                    <ComboBoxItem Content="&lt;" Tag="LessThan" />
-                </ComboBox>
+                        <ComboBoxItem Content="=" Tag="Equals" />
+                        <ComboBoxItem Content="&gt;" Tag="GreaterThan" IsSelected="True" />
+                        <ComboBoxItem Content="&lt;" Tag="LessThan" />
+                    </ComboBox>
 
-                <TextBox x:Name="TxtBitRate"
+                    <TextBox x:Name="TxtBitRate"
                  Height="32"
                  Width="100"
                  FontSize="13"
@@ -346,13 +370,13 @@
                  TextChanged="TxtBitRate_TextChanged"
                  KeyDown="TxtBitrate_KeyDown"/>
 
-                <!-- Bitrate filter -->
-                <TextBlock Text="Resolution:"
+                    <!-- Bitrate filter -->
+                    <TextBlock Text="Resolution:"
                   Foreground="#7A8499" FontSize="12"
                   VerticalAlignment="Center"
                   Margin="30,0,10,0"/>
 
-                <ComboBox x:Name="CmbVideoHeightOp"
+                    <ComboBox x:Name="CmbVideoHeightOp"
                   Width="50" Height="32"
                   SelectedIndex="0"
                   FontSize="13" FontWeight="Bold"
@@ -363,12 +387,12 @@
                   VerticalContentAlignment="Center"
                   HorizontalContentAlignment="Center"
                   Margin="0,0,4,0">
-                    <ComboBoxItem Content="=" Tag="Equals" IsSelected="True" />
-                    <ComboBoxItem Content="&gt;" Tag="GreaterThan" />
-                    <ComboBoxItem Content="&lt;" Tag="LessThan" />
-                </ComboBox>
+                        <ComboBoxItem Content="=" Tag="Equals" IsSelected="True" />
+                        <ComboBoxItem Content="&gt;" Tag="GreaterThan" />
+                        <ComboBoxItem Content="&lt;" Tag="LessThan" />
+                    </ComboBox>
 
-                <ComboBox x:Name="CmbResolution"
+                    <ComboBox x:Name="CmbResolution"
                    Width="100" Height="32"
                    SelectedIndex="0"
                    FontSize="13" FontWeight="Bold"
@@ -379,13 +403,15 @@
                    VerticalContentAlignment="Center"
                    HorizontalContentAlignment="Center"
                    Margin="0,0,4,0">
-                    <ComboBoxItem Content="ALL" IsSelected="True" />
-                    <ComboBoxItem Content="1080" />
-                    <ComboBoxItem Content="720" />
-                    <ComboBoxItem Content="480" />
-                    <ComboBoxItem Content="360" />
-                    <ComboBoxItem Content="240" />
-                </ComboBox>
+                        <ComboBoxItem Content="ALL" IsSelected="True" />
+                        <ComboBoxItem Content="1080" />
+                        <ComboBoxItem Content="720" />
+                        <ComboBoxItem Content="480" />
+                        <ComboBoxItem Content="360" />
+                        <ComboBoxItem Content="240" />
+                    </ComboBox>
+                </StackPanel>
+                <!-- end VideoFilters-->
 
                 <!-- Apply Filter button -->
                 <Button x:Name="BtnFilter"

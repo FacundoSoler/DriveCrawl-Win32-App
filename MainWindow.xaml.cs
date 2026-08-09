@@ -13,6 +13,8 @@ namespace DriveCrawl_Win32_App
     public partial class MainWindow : Window
     {
         private readonly ObservableCollection<FileViewModel> _results = new();
+        public ObservableCollection<SelectableFolder> DrivePathsList { get; set; } = new ObservableCollection<SelectableFolder>();
+
         private readonly DatabaseService _database = new();
         private readonly SearchEngine _searchEngine = new();
         private readonly SearchCoordinator _searchCoordinator;
@@ -34,11 +36,33 @@ namespace DriveCrawl_Win32_App
             LessThan
         }
 
+        public enum FileType {
+            All,
+            Videos,
+            Photos,
+            Other
+        }
+
+        public class SelectableFolder
+        {
+            public WatchedFolders UnderlyingFolder { get; set; }
+            public object Path { get; set; }
+            public bool IsSelected { get; set; } = true; // All options selected by default
+        }
+
         public MainWindow()
         {
             ModernWpf.ThemeManager.SetRequestedTheme(this, ModernWpf.ElementTheme.Dark);
             InitializeComponent();
+
+            DataContext = this;
+
             ResultsGrid.ItemsSource = _results;
+            LoadDrivePaths();
+
+            SelectFileTypeByTag(FileType.Videos.ToString());
+            ShowHideFilters();
+
             ColSize.Binding = new Binding("FileSize") { Converter = new FileSizeConverter() };
 
             _searchCoordinator = new SearchCoordinator(_database, _searchEngine);
@@ -51,6 +75,22 @@ namespace DriveCrawl_Win32_App
         }
 
         #region Main Search Entry Point
+
+        private async void LoadDrivePaths() {
+            var watchedFolders = await Task.Run(() => _database.GetFolders());
+
+            var selectableFolders = watchedFolders.Select(f => new SelectableFolder
+            {
+                UnderlyingFolder = f,
+                Path = f.Path,
+                IsSelected = true
+            }).ToList();
+
+            DrivePathsList.Clear();
+            foreach (var folder in selectableFolders) {
+                DrivePathsList.Add(folder);
+            }
+        }
 
         private async void StartSearch()
         {
@@ -73,7 +113,12 @@ namespace DriveCrawl_Win32_App
 
             try
             {
-                var results = await PerformSearchAsync(query, isExactPhrase, dupsOnly, fileTypeFilter, token);
+                var selectedWatchedFolders = DrivePathsList
+                    .Where(f => f.IsSelected)
+                    .Select(f => f.UnderlyingFolder)
+                    .ToList();
+                var results = await PerformSearchAsync(selectedWatchedFolders, query, isExactPhrase, dupsOnly, fileTypeFilter, token);
+
                 token.ThrowIfCancellationRequested();
 
                 if (results.Item1.Count > 0)
@@ -135,11 +180,12 @@ namespace DriveCrawl_Win32_App
             ResultsGrid.RowHeight = showThumbnails ? GridRowHeightWithThumbnails : GridRowHeight;
         }
 
-        private async Task<(List<FileViewModel>, Task hydrationTask)> PerformSearchAsync(string query, bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
+        private async Task<(List<FileViewModel>, Task hydrationTask)> PerformSearchAsync(List<WatchedFolders> selectedWatchedFolders, string query,
+            bool isExactPhrase, bool includeDuplicatesOnly, FileTypeFilter fileTypeFilter, CancellationToken token)
         {
             try
             {
-                return await _searchCoordinator.ExecuteSearchAsync(query, isExactPhrase, includeDuplicatesOnly, fileTypeFilter, token);
+                return await _searchCoordinator.ExecuteSearchAsync(selectedWatchedFolders, query, isExactPhrase, includeDuplicatesOnly, fileTypeFilter, token);
             }
             catch (InvalidOperationException ex)
             {
@@ -239,12 +285,34 @@ namespace DriveCrawl_Win32_App
 
         #endregion
 
-        #region Event Handlers - Search
+        #region Event Handlers - Search bar
 
         private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter && !_isOperationInProgress)
                 StartSearch();
+        }
+
+        private void CmbFileType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ShowHideFilters();
+        }
+
+        private void SelectFileTypeByTag(string targetTag)
+        {
+            CmbFileType.SelectedItem = CmbFileType.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(item => string.Equals(item.Tag?.ToString(), targetTag, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void ShowHideFilters()
+        {
+            if (!IsInitialized || PanelVideoFilters == null) return;
+
+            string? selectedTag = (CmbFileType.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            bool isVideo = string.Equals(selectedTag, "Videos", StringComparison.OrdinalIgnoreCase);
+
+            PanelVideoFilters.Visibility = isVideo ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void BtnSearch_Click(object sender, RoutedEventArgs e)
@@ -264,7 +332,7 @@ namespace DriveCrawl_Win32_App
 
         #endregion
 
-        #region Event Handlers - Filter
+        #region Event Handlers - Filter bar
 
         private void TxtFilter_KeyDown(object sender, KeyEventArgs e)
         {
@@ -293,6 +361,7 @@ namespace DriveCrawl_Win32_App
             }
         }
 
+
         private void BtnFilter_Click(object sender, RoutedEventArgs e)
         {
             ApplyFilter();
@@ -308,6 +377,12 @@ namespace DriveCrawl_Win32_App
                 FileSystemOperations.OpenFileWithDefaultProgram(file.FullPath);
         }
 
+        private void ShowInExplorerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.DataContext is FileViewModel file)
+                FileSystemOperations.OpenContainingFolder(file.FullPath);
+        }
+
         #endregion
 
         #region Event Handlers - File Management
@@ -318,7 +393,7 @@ namespace DriveCrawl_Win32_App
         }
 
         private void ChkSelectAll_Click(object sender, RoutedEventArgs e)
-        {      
+        {
             if (sender is CheckBox chkSelectAll && chkSelectAll.IsChecked.HasValue)
             {
                 bool isChecked = chkSelectAll.IsChecked.Value;
@@ -341,7 +416,7 @@ namespace DriveCrawl_Win32_App
             else {
                 BtnDeleteSelected.IsEnabled = false;
                 BtnMove.IsEnabled = false;
-            }        
+            }
         }
 
         private void BtnDeleteSelected_Click(object sender, RoutedEventArgs e)
@@ -370,12 +445,7 @@ namespace DriveCrawl_Win32_App
             }
         }
 
-        private void ShowInExplorerMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.DataContext is FileViewModel file)
-                FileSystemOperations.OpenContainingFolder(file.FullPath);
-        }
-
         #endregion
+
     }
 }
