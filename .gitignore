@@ -403,3 +403,6 @@ FodyWeavers.xsd
 
 # Claude Code personal notes
 CLAUDE.local.md
+
+# Claude Code agent worktrees (isolated working copies created inside the repo)
+.claude/worktrees/
