@@ -5,6 +5,7 @@ A log of the important choices made for DriveCrawl, and why they were made.
 **How to maintain it:**
 - Add each new decision at the bottom with the next number.
 - Keep each entry short: the decision, the reason, and the alternatives that were considered.
+- If a decision came from a write-up, add a **Reference:** line linking to it: an artifact, a design page, or a PR. Mark private links as "(private)".
 - Never rewrite or delete an old entry. When a decision changes, add a new entry that says `Supersedes D-NNN`, and change the old entry's status to `Superseded by D-NNN`.
 
 ---
