@@ -73,6 +73,10 @@
             <Setter Property="Background" Value="#3B82F6"/>
         </Style>
 
+        <Style x:Key="RedButtonStyle" TargetType="Button" BasedOn="{StaticResource DialogButtonStyle}">
+            <Setter Property="Background" Value="#EF4444"/>
+        </Style>
+
         <Style x:Key="IconButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="#7A8499"/>
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
@@ -234,7 +238,7 @@
                            Visibility="{Binding HasEditorError, Converter={StaticResource BoolToVisibility}}"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                     <Button Content="Cancel" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Click="CancelEditButton_Click"/>
-                    <Button Content="Apply" Style="{StaticResource PrimaryButtonStyle}" Click="ApplyEditButton_Click"/>
+                    <Button Content="Save" Style="{StaticResource RedButtonStyle}" Click="SaveEditButton_Click"/>
                 </StackPanel>
             </StackPanel>
         </Border>

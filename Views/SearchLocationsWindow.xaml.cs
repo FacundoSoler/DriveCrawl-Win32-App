@@ -49,7 +49,7 @@ namespace DriveCrawl_Win32_App.Views
             _viewModel.BrowseForEditorPath();
         }
 
-        private void ApplyEditButton_Click(object sender, RoutedEventArgs e)
+        private void SaveEditButton_Click(object sender, RoutedEventArgs e)
         {
             _viewModel.ApplyEdit();
         }
