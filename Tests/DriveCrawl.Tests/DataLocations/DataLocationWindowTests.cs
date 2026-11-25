@@ -1,3 +1,4 @@
+using DriveCrawl.Tests.TestSupport;
 using System.Windows;
 using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.ViewModels;
@@ -14,7 +15,7 @@ public sealed class DataLocationWindowTests : IDisposable
     [WpfFact]
     public void Window_LoadsItsXaml_AndBindsToTheViewModel()
     {
-        EnsureApplicationWithModernWpfResources();
+        WpfTestApplication.EnsureCreated();
         var service = _context.CreateService();
         service.SaveChoice(DataLocation.AppFolder);
         var vm = new DataLocationViewModel(service, DataLocationPromptMode.Change);
@@ -29,16 +30,5 @@ public sealed class DataLocationWindowTests : IDisposable
     public void Constructor_NullViewModel_Throws()
     {
         Should.Throw<ArgumentNullException>(() => new DataLocationWindow(null!));
-    }
-
-    private static void EnsureApplicationWithModernWpfResources()
-    {
-        // At runtime App.xaml provides these; ModernWpf's ThemeManager fails without them.
-        if (Application.Current is not null)
-            return;
-
-        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-        app.Resources.MergedDictionaries.Add(new ModernWpf.ThemeResources());
-        app.Resources.MergedDictionaries.Add(new ModernWpf.Controls.XamlControlsResources());
     }
 }

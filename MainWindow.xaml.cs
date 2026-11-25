@@ -19,6 +19,7 @@ namespace DriveCrawl_Win32_App
         private readonly DatabaseService _database;
         private readonly DataLocationService _dataLocations;
         private readonly DataLocationPrompt _locationPrompt;
+        private readonly SearchLocationsPrompt _searchLocationsPrompt;
         private readonly SearchEngine _searchEngine = new();
         private readonly SearchCoordinator _searchCoordinator;
         private readonly SearchResultsManager _resultsManager;
@@ -53,11 +54,13 @@ namespace DriveCrawl_Win32_App
             public bool IsSelected { get; set; } = true; // All options selected by default
         }
 
-        public MainWindow(DatabaseService database, DataLocationService dataLocations, DataLocationPrompt locationPrompt)
+        public MainWindow(DatabaseService database, DataLocationService dataLocations, DataLocationPrompt locationPrompt,
+            SearchLocationsPrompt searchLocationsPrompt)
         {
             _database = database ?? throw new ArgumentNullException(nameof(database));
             _dataLocations = dataLocations ?? throw new ArgumentNullException(nameof(dataLocations));
             _locationPrompt = locationPrompt ?? throw new ArgumentNullException(nameof(locationPrompt));
+            _searchLocationsPrompt = searchLocationsPrompt ?? throw new ArgumentNullException(nameof(searchLocationsPrompt));
 
             ModernWpf.ThemeManager.SetRequestedTheme(this, ModernWpf.ElementTheme.Dark);
             InitializeComponent();
@@ -65,7 +68,8 @@ namespace DriveCrawl_Win32_App
             DataContext = this;
 
             ResultsGrid.ItemsSource = _results;
-            LoadDrivePaths();
+            // Loading happens once the window is shown, so a first-run prompt can open on top of it.
+            Loaded += MainWindow_Loaded;
 
             SelectFileTypeByTag(FileType.Videos.ToString());
             ShowHideFilters();
@@ -84,24 +88,61 @@ namespace DriveCrawl_Win32_App
 
         #region Main Search Entry Point
 
-        private async void LoadDrivePaths() {
+        private async Task LoadDrivePathsAsync()
+        {
             var watchedFolders = await Task.Run(() => _database.GetFolders());
 
-            var selectableFolders = watchedFolders.Select(f => new SelectableFolder
-            {
-                UnderlyingFolder = f,
-                Path = f.Path,
-                IsSelected = true
-            }).ToList();
+            var previousSelection = DrivePathsList.ToDictionary(f => f.UnderlyingFolder.Id, f => f.IsSelected);
+            var selectedIds = DrivePathSelection.ResolveSelectedIds(previousSelection, watchedFolders.Select(f => f.Id));
 
             DrivePathsList.Clear();
-            foreach (var folder in selectableFolders) {
-                DrivePathsList.Add(folder);
+            foreach (var folder in watchedFolders)
+            {
+                DrivePathsList.Add(new SelectableFolder
+                {
+                    UnderlyingFolder = folder,
+                    Path = folder.Path,
+                    IsSelected = selectedIds.Contains(folder.Id)
+                });
             }
+        }
+
+        private async Task ManageSearchLocationsAsync()
+        {
+            if (_isOperationInProgress)
+            {
+                StatusLabel.Text = "Stop the current search before changing search locations.";
+                return;
+            }
+
+            BtnDrivePathsToggle.IsChecked = false;
+            if (_searchLocationsPrompt.TryManage(this))
+            {
+                await LoadDrivePathsAsync();
+                StatusLabel.Text = "Search locations saved.";
+            }
+        }
+
+        private bool HasSelectedSearchLocation()
+        {
+            if (DrivePathsList.Any(f => f.IsSelected))
+                return true;
+
+            StatusLabel.Text = "Tick at least one location in Drive Paths to search.";
+            return false;
         }
 
         private async void StartSearch()
         {
+            if (DrivePathsList.Count == 0)
+            {
+                await ManageSearchLocationsAsync();
+                return;
+            }
+
+            if (!HasSelectedSearchLocation())
+                return;
+
             string query = TxtSearch.Text.Trim();
             bool isExactPhrase = ChkExactPhrase.IsChecked == true;
             bool dupsOnly = ChkDuplicates.IsChecked == true;
@@ -469,6 +510,28 @@ namespace DriveCrawl_Win32_App
         {
             if (_locationPrompt.TryChangeLocation(this))
                 AppRestarter.Restart();
+        }
+
+        #endregion
+
+        #region Event Handlers - Search Locations
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            await LoadDrivePathsAsync();
+
+            if (DrivePathsList.Count == 0)
+                await ManageSearchLocationsAsync();
+        }
+
+        private async void BtnManageLocations_Click(object sender, RoutedEventArgs e)
+        {
+            await ManageSearchLocationsAsync();
+        }
+
+        private async void ManageLocationsLink_Click(object sender, RoutedEventArgs e)
+        {
+            await ManageSearchLocationsAsync();
         }
 
         #endregion

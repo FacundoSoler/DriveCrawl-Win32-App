@@ -33,8 +33,13 @@ namespace DriveCrawl_Win32_App
 
         private void ShowMainWindow(string databasePath, DataLocationService dataLocations, DataLocationPrompt locationPrompt)
         {
-            var database = new DatabaseService(DatabaseLocation.BuildConnectionString(databasePath));
-            var mainWindow = new MainWindow(database, dataLocations, locationPrompt);
+            string connectionString = DatabaseLocation.BuildConnectionString(databasePath);
+            var searchLocationsPrompt = new SearchLocationsPrompt(
+                new SearchLocationRepository(connectionString),
+                new MessageBoxUserDialogs(),
+                new OpenFolderDialogPicker(),
+                new SystemPathProbe());
+            var mainWindow = new MainWindow(new DatabaseService(connectionString), dataLocations, locationPrompt, searchLocationsPrompt);
 
             // Startup runs with OnExplicitShutdown so closing the first-run dialog doesn't end the app; from here on the main window decides.
             MainWindow = mainWindow;
