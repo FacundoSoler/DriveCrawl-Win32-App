@@ -82,7 +82,13 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
   - `SearchEngine.Search` walks the file system live with `Directory.EnumerateFiles`.
   - Video metadata (TagLib) loads afterwards in the background through the returned `hydrationTask`.
   - Thumbnails load separately through `ThumbnailManager` → `ShellThumbnailService` (COM).
-- The database is queried in one place only: `DatabaseService.GetFolders()` reads `WatchedFolders`.
+- `WatchedFolders` rows are called **Search Locations** in the UI.
+  - `DatabaseService.GetFolders()` reads them for searching.
+  - `SearchLocationRepository` adds, edits and removes them, all in one batch.
+  - Users manage them in `Views/SearchLocationsWindow`, opened from the gear next to Drive Paths.
+- Search locations must never overlap. One folder inside another makes each file appear twice,
+  so duplicate mode would mark the only copy for deletion.
+  `SearchLocationRules` enforces this and also compares paths case-insensitively. Keep those rules in place.
   - Search does **not** use the DB index. The `Files`, `Tags` and `FileTags` tables exist in the schema but nothing uses them.
 - File location and namespace don't always match. Check the namespace before you add `using`s:
   - `SearchEngine.cs` is at the root but in namespace `DriveCrawl_Win32_App.Services`.
@@ -121,8 +127,8 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
   - The choice is saved in `%LocalAppData%\DriveCrawl\settings.json`. Change it from the status-bar **Library** button.
   - All path logic lives in `DataLocationService` and `DataLocationPaths`. Never hard-code a DB path elsewhere.
 - The app refuses a database whose `user_version` is newer than its own scripts.
-- Search does not use `Files`, `Tags` or `FileTags` yet. Only `WatchedFolders` is read.
-- There is no UI to add watched folders yet. A fresh library starts empty.
+- Search does not use `Files`, `Tags` or `FileTags` yet.
+- A fresh library starts with no search locations, so the Search Locations dialog opens on first launch.
 
 ## Gotchas
 

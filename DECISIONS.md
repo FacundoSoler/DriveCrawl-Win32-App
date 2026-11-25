@@ -85,3 +85,14 @@ There are no broad interface layers or rewrites.
 **Date:** 2026-11-25 · **Status:** Accepted
 **Decision:** Agents work on `feature/<name>` branches and push them. The maintainer opens and merges PRs manually. PR descriptions are a few bullets of core changes; the detail lives in the commits.
 **Why:** the maintainer keeps control of what reaches `main`.
+
+## D-009 · Search Locations dialog safeguards
+**Date:** 2026-11-25 · **Status:** Accepted
+**Decision:** The Search Locations dialog (D-007) ships with three extras:
+- It blocks folders that overlap an existing location (one inside another).
+- The Drive Paths popup gets a "Manage locations…" link.
+- The dialog opens automatically when there are no locations yet.
+
+**Why:**
+- Overlapping locations make each file look like its own duplicate, so "Delete selected" could permanently remove the only copy.
+- The link and the automatic first-run opening make the feature easy to find, and give new users a guided first step.

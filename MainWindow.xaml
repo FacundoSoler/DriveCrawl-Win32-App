@@ -224,7 +224,7 @@
 
                 <!-- Drive Paths selection -->
                 <ToggleButton x:Name="BtnDrivePathsToggle"
-                  Width="120" Height="36" Margin="0,0,20,0"
+                  Width="120" Height="36" Margin="0,0,6,0"
                   Content="Drive Paths"
                   FontSize="13" FontWeight="Bold"
                   Foreground="#E8ECF4"
@@ -232,6 +232,13 @@
                   BorderBrush="#2A3048"
                   BorderThickness="1"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+                <Button x:Name="BtnManageLocations"
+                        Width="36" Height="36" Margin="0,0,20,0"
+                        Content="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                        Foreground="#E8ECF4" Background="#1E2536" BorderBrush="#2A3048" BorderThickness="1"
+                        ToolTip="Manage search locations"
+                        Click="BtnManageLocations_Click"/>
 
                 <!-- The Drive Paths Popup containing the checkbox list -->
                 <Popup IsOpen="{Binding IsChecked, ElementName=BtnDrivePathsToggle, Mode=TwoWay}"
@@ -242,6 +249,27 @@
                    DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                         <Border Background="#1E2536" BorderBrush="#2A3048" 
                                 BorderThickness="1" MaxHeight="400" MinHeight="50">
+                          <DockPanel>
+                            <Button DockPanel.Dock="Bottom"
+                                    Click="ManageLocationsLink_Click"
+                                    Cursor="Hand" HorizontalContentAlignment="Left">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="footer" Background="Transparent" BorderBrush="#2A3048" BorderThickness="0,1,0,0" Padding="10,7">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="#4A9EFF"
+                                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock Text="Manage locations..." Foreground="#4A9EFF" FontSize="12.5" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="footer" Property="Background" Value="#252E44"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ListBox ItemsSource="{Binding DrivePathsList}"
                                  Background="Transparent"
@@ -258,6 +286,7 @@
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                             </ScrollViewer>
+                          </DockPanel>
                         </Border>
                 </Popup>
 
