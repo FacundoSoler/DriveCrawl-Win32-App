@@ -25,10 +25,11 @@
     <EmbeddedResource Remove="Tests\**" />
   </ItemGroup>
 
+  <!-- The schema ships as versioned SQL and the app creates/upgrades the database at startup,
+       so the .db file is never copied to the output (copying it overwrote runtime data on every build). -->
   <ItemGroup>
-    <None Update="Database\MediaLibrary.db">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Remove="Data\Migrations\*.sql" />
+    <EmbeddedResource Include="Data\Migrations\*.sql" LogicalName="Migrations/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

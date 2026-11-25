@@ -9,11 +9,10 @@ namespace DriveCrawl_Win32_App.Data
 {
     public class DatabaseService
     {
-        // La base de datos vive en la carpeta de ejecución de la app
         private readonly string _connectionString;
 
         public DatabaseService()
-            : this(BuildDefaultConnectionString())
+            : this(DatabaseLocation.BuildConnectionString(DatabaseLocation.DefaultDatabasePath))
         {
         }
 
@@ -32,13 +31,6 @@ namespace DriveCrawl_Win32_App.Data
             return connection.Query<WatchedFolders>(
                 "SELECT * FROM WatchedFolders ORDER BY Priority ASC"
             ).ToList();
-        }
-
-        private static string BuildDefaultConnectionString()
-        {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string dbPath = Path.Combine(baseDir, "Database", "MediaLibrary.db");
-            return $"Data Source={dbPath}";
         }
     }
 }
