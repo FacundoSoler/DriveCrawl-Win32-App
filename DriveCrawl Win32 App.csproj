@@ -17,6 +17,14 @@
     <PackageReference Include="TagLibSharp" Version="2.3.0" />
   </ItemGroup>
 
+  <!-- The app project sits at the repo root, so its default globs would otherwise compile the test project's sources. -->
+  <ItemGroup>
+    <Compile Remove="Tests\**" />
+    <None Remove="Tests\**" />
+    <Page Remove="Tests\**" />
+    <EmbeddedResource Remove="Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Update="Database\MediaLibrary.db">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="DriveCrawl Win32 App.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="Tests/DriveCrawl.Tests/DriveCrawl.Tests.csproj" />
+  </Folder>
 </Solution>

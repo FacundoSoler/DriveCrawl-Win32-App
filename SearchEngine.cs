@@ -100,7 +100,7 @@ namespace DriveCrawl_Win32_App.Services
             });
         }
 
-        private static bool MatchesFileTypeFilter(string extension, FileTypeFilter filter)
+        internal static bool MatchesFileTypeFilter(string extension, FileTypeFilter filter)
         {
             return filter switch
             {

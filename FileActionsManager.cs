@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using DriveCrawl_Win32_App.Services;
 
 namespace DriveCrawl_Win32_App
 {
@@ -10,12 +11,14 @@ namespace DriveCrawl_Win32_App
     public class FileActionsManager
     {
         private readonly ObservableCollection<FileViewModel> _resultsCollection;
+        private readonly IUserDialogs _dialogs;
 
         public event Action? OperationCompleted;
 
-        public FileActionsManager(ObservableCollection<FileViewModel> resultsCollection)
+        public FileActionsManager(ObservableCollection<FileViewModel> resultsCollection, IUserDialogs dialogs)
         {
             _resultsCollection = resultsCollection ?? throw new ArgumentNullException(nameof(resultsCollection));
+            _dialogs = dialogs ?? throw new ArgumentNullException(nameof(dialogs));
         }
 
         public async Task DeleteSelectedFilesAsync(IEnumerable<FileViewModel> selectedFiles)
@@ -23,13 +26,12 @@ namespace DriveCrawl_Win32_App
             var filesToDelete = selectedFiles.ToList();
             if (filesToDelete.Count == 0) return;
 
-            var result = MessageBox.Show(
+            bool confirmed = _dialogs.Confirm(
                 $"Are you sure you want to delete {filesToDelete.Count} file(s)?",
                 "Confirm Delete",
-                MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
-            if (result != MessageBoxResult.Yes) return;
+            if (!confirmed) return;
 
             int successCount = 0;
             var failedFiles = new List<(string Path, string Error)>();
@@ -60,13 +62,12 @@ namespace DriveCrawl_Win32_App
             var filesToMove = selectedFiles.ToList();
             if (filesToMove.Count == 0 || string.IsNullOrWhiteSpace(destinationFolder)) return;
 
-            var result = MessageBox.Show(
+            bool confirmed = _dialogs.Confirm(
                 $"Are you sure you want to move {filesToMove.Count} file(s) to:\n{destinationFolder}?",
                 "Confirm Move",
-                MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
-            if (result != MessageBoxResult.Yes) return;
+            if (!confirmed) return;
 
             int successCount = 0;
             var failedFiles = new List<(string Path, string Error)>();
@@ -109,18 +110,16 @@ namespace DriveCrawl_Win32_App
 
                 string moreIndicator = failedFiles.Count > 3 ? $"\n...and {failedFiles.Count - 3} more errors." : "";
 
-                MessageBox.Show(
+                _dialogs.Notify(
                     $"Successfully {operationName.ToLower()}d {successCount} file(s).\n\nFailed:\n{failureMessage}{moreIndicator}",
                     $"{operationName} Summary",
-                    MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
             else
             {
-                MessageBox.Show(
+                _dialogs.Notify(
                     $"Successfully {operationName.ToLower()}d {successCount} file(s).",
                     $"{operationName} Complete",
-                    MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
         }

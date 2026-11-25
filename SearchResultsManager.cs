@@ -52,66 +52,16 @@ namespace DriveCrawl_Win32_App
 
         public void ApplyFilter(string filterText, string bitrateText, Operator bitrateOperator, string videoHeight, Operator videoHeightOperator)
         {
-            string normalizedFilter = filterText?.Trim().ToLowerInvariant() ?? string.Empty;
-            string normalizedBitrate = bitrateText?.Trim() ?? string.Empty;
-            int videoHeightParsedValue;
-            int.TryParse(videoHeight, out videoHeightParsedValue);
+            var filter = new SearchResultFilter(filterText, bitrateText, bitrateOperator, videoHeight, videoHeightOperator);
 
-            bool isBitrateFilterActive = int.TryParse(normalizedBitrate, out int targetBitrate);
-            bool isVideoResolutionFilterActive = int.TryParse(videoHeight, out int targetVideoHeight);
-
-            if (string.IsNullOrEmpty(normalizedFilter) && !isBitrateFilterActive && !isVideoResolutionFilterActive)
+            if (!filter.IsActive)
             {
                 RefreshResultsDisplay(_originalSearchResults);
                 _emptyState.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            var filtered = _originalSearchResults.Where(f =>
-            {
-                bool matchesName = string.IsNullOrEmpty(normalizedFilter) ||
-                                   (f.FileName != null && f.FileName.ToLowerInvariant().Contains(normalizedFilter));
-
-                bool matchesBitrate = true;
-                if (isBitrateFilterActive)
-                {
-                    if (!f.BitrateKbps.HasValue)
-                    {
-                        matchesBitrate = false;
-                    }
-                    else
-                    {
-                        int fileBitrate = f.BitrateKbps.Value;
-                        matchesBitrate = bitrateOperator switch
-                        {
-                            Operator.GreaterThan => fileBitrate > targetBitrate,
-                            Operator.LessThan => fileBitrate < targetBitrate,
-                            Operator.Equals => fileBitrate == targetBitrate,
-                            _ => true
-                        };
-                    }
-                }
-
-                bool matchesResolution = true;
-                if (isVideoResolutionFilterActive && videoHeightParsedValue > 0) {
-                    if (f.VideoHeight == 0)
-                    {
-                        matchesResolution = false;
-                    }
-                    else {
-                        int fileVideoHeightValue = f.VideoHeight;
-                        matchesResolution = videoHeightOperator switch
-                        {
-                            Operator.GreaterThan => fileVideoHeightValue >= videoHeightParsedValue,
-                            Operator.LessThan => fileVideoHeightValue <= videoHeightParsedValue,
-                            Operator.Equals => fileVideoHeightValue == videoHeightParsedValue,
-                            _ => true
-                        };
-                    }
-                }
-
-                return matchesName && matchesBitrate && matchesResolution;
-            }).ToList();
+            var filtered = _originalSearchResults.Where(filter.Matches).ToList();
 
             RefreshResultsDisplay(filtered);
 
