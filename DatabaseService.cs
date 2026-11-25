@@ -11,11 +11,6 @@ namespace DriveCrawl_Win32_App.Data
     {
         private readonly string _connectionString;
 
-        public DatabaseService()
-            : this(DatabaseLocation.BuildConnectionString(DatabaseLocation.DefaultDatabasePath))
-        {
-        }
-
         public DatabaseService(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))

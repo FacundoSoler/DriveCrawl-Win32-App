@@ -1,6 +1,7 @@
-using DriveCrawl_Win32_App.Data;
+﻿using DriveCrawl_Win32_App.Data;
 using DriveCrawl_Win32_App.Models;
 using DriveCrawl_Win32_App.Services;
+using DriveCrawl_Win32_App.Views;
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -15,7 +16,9 @@ namespace DriveCrawl_Win32_App
         private readonly ObservableCollection<FileViewModel> _results = new();
         public ObservableCollection<SelectableFolder> DrivePathsList { get; set; } = new ObservableCollection<SelectableFolder>();
 
-        private readonly DatabaseService _database = new();
+        private readonly DatabaseService _database;
+        private readonly DataLocationService _dataLocations;
+        private readonly DataLocationPrompt _locationPrompt;
         private readonly SearchEngine _searchEngine = new();
         private readonly SearchCoordinator _searchCoordinator;
         private readonly SearchResultsManager _resultsManager;
@@ -50,8 +53,12 @@ namespace DriveCrawl_Win32_App
             public bool IsSelected { get; set; } = true; // All options selected by default
         }
 
-        public MainWindow()
+        public MainWindow(DatabaseService database, DataLocationService dataLocations, DataLocationPrompt locationPrompt)
         {
+            _database = database ?? throw new ArgumentNullException(nameof(database));
+            _dataLocations = dataLocations ?? throw new ArgumentNullException(nameof(dataLocations));
+            _locationPrompt = locationPrompt ?? throw new ArgumentNullException(nameof(locationPrompt));
+
             ModernWpf.ThemeManager.SetRequestedTheme(this, ModernWpf.ElementTheme.Dark);
             InitializeComponent();
 
@@ -64,6 +71,7 @@ namespace DriveCrawl_Win32_App
             ShowHideFilters();
 
             ColSize.Binding = new Binding("FileSize") { Converter = new FileSizeConverter() };
+            LibraryButton.ToolTip = $"Library: {_dataLocations.CurrentDatabasePath}";
 
             _searchCoordinator = new SearchCoordinator(_database, _searchEngine);
             _resultsManager = new SearchResultsManager(
@@ -443,6 +451,24 @@ namespace DriveCrawl_Win32_App
                 string destinationPath = dialog.FolderName;
                 await _fileActionsManager.MoveSelectedFilesAsync(selected, destinationPath);
             }
+        }
+
+        private void LibraryButton_Click(object sender, RoutedEventArgs e)
+        {
+            LibraryButton.ContextMenu.PlacementTarget = LibraryButton;
+            LibraryButton.ContextMenu.IsOpen = true;
+        }
+
+        private void OpenLibraryFolderMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (_dataLocations.CurrentDatabasePath is { } path)
+                FileSystemOperations.OpenContainingFolder(path);
+        }
+
+        private void ChangeLibraryLocationMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (_locationPrompt.TryChangeLocation(this))
+                AppRestarter.Restart();
         }
 
         #endregion

@@ -1,5 +1,7 @@
 ﻿using System.Windows;
 using DriveCrawl_Win32_App.Data;
+using DriveCrawl_Win32_App.Services;
+using DriveCrawl_Win32_App.Views;
 
 namespace DriveCrawl_Win32_App
 {
@@ -9,19 +11,39 @@ namespace DriveCrawl_Win32_App
         {
             base.OnStartup(e);
 
-            // MainWindow queries the database in its constructor, so it is only created once the schema is ready.
-            if (!TryInitializeDatabase())
+            var dataLocations = DataLocationService.ForCurrentUser();
+            var locationPrompt = new DataLocationPrompt(dataLocations);
+
+            var location = dataLocations.TryResolveWithoutAsking() ?? locationPrompt.AskOnFirstRun();
+            if (location is null)
+            {
+                Shutdown(0);
+                return;
+            }
+
+            string databasePath = dataLocations.GetDatabasePath(location.Value);
+            if (!TryInitializeDatabase(databasePath))
             {
                 Shutdown(1);
                 return;
             }
 
-            new MainWindow().Show();
+            ShowMainWindow(databasePath, dataLocations, locationPrompt);
         }
 
-        private static bool TryInitializeDatabase()
+        private void ShowMainWindow(string databasePath, DataLocationService dataLocations, DataLocationPrompt locationPrompt)
         {
-            string databasePath = DatabaseLocation.DefaultDatabasePath;
+            var database = new DatabaseService(DatabaseLocation.BuildConnectionString(databasePath));
+            var mainWindow = new MainWindow(database, dataLocations, locationPrompt);
+
+            // Startup runs with OnExplicitShutdown so closing the first-run dialog doesn't end the app; from here on the main window decides.
+            MainWindow = mainWindow;
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            mainWindow.Show();
+        }
+
+        private static bool TryInitializeDatabase(string databasePath)
+        {
             try
             {
                 DatabaseInitializer.Initialize(databasePath);
@@ -30,8 +52,8 @@ namespace DriveCrawl_Win32_App
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"DriveCrawl could not prepare its database at:\n{databasePath}\n\n{ex.Message}",
-                    "Database Error",
+                    $"DriveCrawl could not prepare its library at:\n{databasePath}\n\n{ex.Message}",
+                    "Library Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return false;

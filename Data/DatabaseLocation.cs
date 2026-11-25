@@ -4,14 +4,11 @@ using Microsoft.Data.Sqlite;
 namespace DriveCrawl_Win32_App.Data
 {
     /// <summary>
-    /// Single source of truth for where MediaLibrary.db lives and how connections to it are opened.
+    /// How connections to MediaLibrary.db are opened. Where the file lives is decided by DataLocationService.
     /// </summary>
     public static class DatabaseLocation
     {
         public const string DatabaseFileName = "MediaLibrary.db";
-
-        public static string DefaultDatabasePath =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Database", DatabaseFileName);
 
         public static string BuildConnectionString(string databasePath)
         {
