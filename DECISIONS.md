@@ -105,3 +105,12 @@ There are no broad interface layers or rewrites.
 - GitHub's "Automatically delete head branches" is on, and `fetch.prune` is on locally, so merged branches disappear.
 
 **Why:** with several branches active it was hard to see what needed attention. Now the Pull requests tab is the single to-do list, and merged work cleans itself up.
+
+## D-011 · Agents clean up their own merged local branches
+**Date:** 2026-11-25 · **Status:** Accepted
+**Decision:**
+- At the start of each task, the agent deletes the local branches it created once they're merged.
+- A branch counts as merged when its GitHub branch is gone and `origin/main` contains it.
+- The agent never deletes the maintainer's current branch or branches it didn't create.
+
+**Why:** GitHub's auto-delete (D-010) only removes the remote branch. Git never deletes local branches, and branches from agent worktrees pile up in the maintainer's repo.

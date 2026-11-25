@@ -20,4 +20,8 @@ Use this file only for Claude Code–specific workflow.
   To inspect the library, copy it to a temp directory first. Never stage or commit any `.db` file.
 - Git: work in a worktree, branch off the latest `main`, push, then open the PR with `gh pr create`.
   Never merge. End the report with a table of open PRs and the suggested merge order.
+- Branches created in a worktree also appear in the maintainer's local repo and stay there after the worktree
+  is removed. At the start of each task, run `git fetch --prune`, then delete the local branches you created.
+  Only delete a branch whose upstream is `[gone]` and which `git merge-base --is-ancestor <branch> origin/main` confirms is merged.
+  Never delete the branch the maintainer has checked out, or a branch you didn't create.
 - Personal or machine-specific notes go in `CLAUDE.local.md`, which is gitignored. Don't put them here.
