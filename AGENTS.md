@@ -152,6 +152,10 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
 - Don't add change logs, history, or descriptions of code that is self-explanatory.
   Keep AGENTS.md short (under 200 lines, Anthropic's recommended ceiling). When something becomes obsolete, delete it rather than adding to it.
 - Keep `.github/copilot-instructions.md` in sync when you change the Code style section.
+- **DECISIONS.md** records important decisions and the reasons behind them.
+  - Read it before proposing an alternative to a choice that's already settled.
+  - When the maintainer makes a decision, or you make one together, append a short numbered entry.
+  - Never rewrite an old entry. Add a new entry that supersedes it.
 
 ## Commits and PRs
 
