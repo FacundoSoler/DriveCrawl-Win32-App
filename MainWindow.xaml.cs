@@ -144,6 +144,8 @@ namespace DriveCrawl_Win32_App
                     await results.hydrationTask;
                 }
 
+                token.ThrowIfCancellationRequested();
+
                 _timerManager.SetCompletionStatus($"Ready. Search completed in {_timerManager.GetElapsedSeconds():F2} seconds.");
             }
             catch (OperationCanceledException)
