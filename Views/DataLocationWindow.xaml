@@ -1,0 +1,148 @@
+<Window x:Class="DriveCrawl_Win32_App.Views.DataLocationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DriveCrawl - Library location"
+        Width="600" SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
+        Background="#0F1117"
+        Icon="pack://application:,,,/DriveCrawl Win32 App;component/Resources/app_icon.ico"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+
+        <Style x:Key="LocationCardStyle" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="card"
+                                Background="#161B27"
+                                BorderBrush="#2A3048"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="14,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Ellipse x:Name="outerDot" Width="16" Height="16"
+                                         Stroke="#4A5568" StrokeThickness="2"
+                                         VerticalAlignment="Top" Margin="0,2,12,0"/>
+                                <Ellipse x:Name="innerDot" Width="8" Height="8"
+                                         Fill="#4A9EFF" Visibility="Collapsed"
+                                         VerticalAlignment="Top" Margin="4,6,16,0"/>
+                                <ContentPresenter Grid.Column="1"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="card" Property="BorderBrush" Value="#3A4460"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="card" Property="BorderBrush" Value="#4A9EFF"/>
+                                <Setter TargetName="card" Property="Background" Value="#18233A"/>
+                                <Setter TargetName="outerDot" Property="Stroke" Value="#4A9EFF"/>
+                                <Setter TargetName="innerDot" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="card" Property="Opacity" Value="0.55"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DialogButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,8"/>
+            <Setter Property="MinWidth" Value="96"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#1F2430"/>
+                                <Setter Property="Foreground" Value="#4A5568"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="24,22,24,20">
+        <TextBlock Text="{Binding Heading}" Foreground="#E8ECF4" FontSize="18" FontWeight="SemiBold"/>
+        <TextBlock Text="{Binding Subheading}" Foreground="#7A8499" FontSize="12.5"
+                   TextWrapping="Wrap" Margin="0,6,0,18"/>
+
+        <ItemsControl ItemsSource="{Binding Options}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton GroupName="DataLocation"
+                                 Style="{StaticResource LocationCardStyle}"
+                                 IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsAvailable}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Title}" Foreground="#E8ECF4" FontSize="14" FontWeight="SemiBold"/>
+                                <Border Background="#1E2B45" CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding HasBadge, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="{Binding Badge}" Foreground="#4A9EFF" FontSize="11"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Description}" Foreground="#9AA3B5" FontSize="12"
+                                       TextWrapping="Wrap" Margin="0,4,0,8"/>
+                            <Border Background="#0F1117" CornerRadius="3" Padding="8,5">
+                                <TextBlock Text="{Binding DatabasePath}" Foreground="#7A8499"
+                                           FontFamily="Consolas" FontSize="11.5" TextWrapping="Wrap"
+                                           ToolTip="{Binding DatabasePath}"/>
+                            </Border>
+                            <TextBlock Text="{Binding UnavailableReason}" Foreground="#F97316" FontSize="11.5"
+                                       Margin="0,6,0,0"
+                                       Visibility="{Binding IsUnavailable, Converter={StaticResource BoolToVisibility}}"/>
+                        </StackPanel>
+                    </RadioButton>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <CheckBox IsChecked="{Binding CopyCurrentLibrary, Mode=TwoWay}"
+                  Visibility="{Binding ShowCopyOption, Converter={StaticResource BoolToVisibility}}"
+                  Foreground="#E8ECF4" FontSize="12.5" Margin="2,2,0,4">
+            <TextBlock TextWrapping="Wrap">
+                Copy my current library to the new location
+                <Run Foreground="#7A8499" Text="(the original file is kept)"/>
+            </TextBlock>
+        </CheckBox>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="{Binding CancelText}" Style="{StaticResource DialogButtonStyle}"
+                    Background="#2A3048" IsCancel="True" Margin="0,0,10,0"
+                    Click="CancelButton_Click"/>
+            <Button Content="{Binding ConfirmText}" Style="{StaticResource DialogButtonStyle}"
+                    Background="#3B82F6" IsDefault="True"
+                    IsEnabled="{Binding CanConfirm}"
+                    Click="ConfirmButton_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
