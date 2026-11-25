@@ -70,7 +70,7 @@ namespace DriveCrawl_Win32_App
                 _results, StatusLabel, ResultCount, TotalSizeLabel, EmptyLabel, EmptyState);
             _timerManager = new SearchTimerManager(StatusLabel);
             _thumbnailManager = new ThumbnailManager(ThumbnailCounter);
-            _fileActionsManager = new FileActionsManager(_results);
+            _fileActionsManager = new FileActionsManager(_results, new MessageBoxUserDialogs());
             _fileActionsManager.OperationCompleted += ShowHideActionButtons;
         }
 

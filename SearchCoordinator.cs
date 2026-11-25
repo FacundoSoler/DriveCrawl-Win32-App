@@ -66,7 +66,7 @@ namespace DriveCrawl_Win32_App
             return await Task.Run(() => _searchEngine.Search(folders, query, fileTypeFilter, token), token);
         }
 
-        private static List<FileModel> FilterDuplicates(List<FileModel> all)
+        internal static List<FileModel> FilterDuplicates(List<FileModel> all)
         {
             var duplicateGroups = all
                 .GroupBy(f => new { f.FileName, f.FileSize })
@@ -84,7 +84,7 @@ namespace DriveCrawl_Win32_App
                 .ToList();
         }
 
-        private static void AutoSelectDuplicatesForDeletion(List<FileViewModel> viewModels)
+        internal static void AutoSelectDuplicatesForDeletion(List<FileViewModel> viewModels)
         {
             var groups = viewModels.GroupBy(f => new { f.FileName, f.FileSize });
             foreach (var group in groups)
@@ -97,7 +97,7 @@ namespace DriveCrawl_Win32_App
             }
         }
 
-        private static List<FileViewModel> FilterByExactWord(List<FileViewModel> viewModels, string query)
+        internal static List<FileViewModel> FilterByExactWord(List<FileViewModel> viewModels, string query)
         {
             if (string.IsNullOrWhiteSpace(query))
                 return viewModels;
