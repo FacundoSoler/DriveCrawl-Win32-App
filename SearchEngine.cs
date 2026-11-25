@@ -78,26 +78,35 @@ namespace DriveCrawl_Win32_App.Services
 
             await Task.Run(() =>
             {
-                Parallel.ForEach(files, options, fileModel =>
+                try
                 {
-                    try
-                    {
-                        using var tfile = TagLib.File.Create(fileModel.FullPath);
-                        var duration = tfile.Properties.Duration;
-                        if (duration.TotalSeconds > 0)
-                        {
-                            fileModel.Duration = duration;
-                            fileModel.BitrateKbps = (int)((fileModel.FileSize * 8) / (duration.TotalSeconds * 1000));
-                            fileModel.VideoHeight = tfile.Properties.VideoHeight;
-                            fileModel.VideoWidth = tfile.Properties.VideoWidth;
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore locked/corrupted
-                    }
-                });
+                    Parallel.ForEach(files, options, HydrateFile);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    // Stopping a search is a normal outcome: keep the metadata read so far and let the caller check the token.
+                }
             });
+        }
+
+        private static void HydrateFile(FileViewModel fileModel)
+        {
+            try
+            {
+                using var tfile = TagLib.File.Create(fileModel.FullPath);
+                var duration = tfile.Properties.Duration;
+                if (duration.TotalSeconds > 0)
+                {
+                    fileModel.Duration = duration;
+                    fileModel.BitrateKbps = (int)((fileModel.FileSize * 8) / (duration.TotalSeconds * 1000));
+                    fileModel.VideoHeight = tfile.Properties.VideoHeight;
+                    fileModel.VideoWidth = tfile.Properties.VideoWidth;
+                }
+            }
+            catch
+            {
+                // Ignore locked/corrupted
+            }
         }
 
         internal static bool MatchesFileTypeFilter(string extension, FileTypeFilter filter)

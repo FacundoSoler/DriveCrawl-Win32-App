@@ -51,13 +51,45 @@ public sealed class SearchEngineHydrationTests : IDisposable
     }
 
     [Fact]
-    public async Task PreCancelledToken_Throws()
+    public async Task PreCancelledToken_CompletesQuietly_WithoutReadingAnyFile()
     {
+        string path = Path.Combine(_temp.Path, "tone.wav");
+        WriteSilentWav(path, sampleRate: 8_000, seconds: 1);
+        var vm = TestData.ViewModel("tone.wav", fileSize: 125_000, fullPath: path);
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => _engine.HydrateVideoMetadataAsync(new[] { TestData.ViewModel("a.mp4") }, cts.Token));
+        await Should.NotThrowAsync(() => _engine.HydrateVideoMetadataAsync(new[] { vm }, cts.Token));
+
+        vm.Duration.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task CancellingMidway_CompletesQuietly_AndKeepsMetadataAlreadyRead()
+    {
+        string path = Path.Combine(_temp.Path, "tone.wav");
+        WriteSilentWav(path, sampleRate: 8_000, seconds: 1);
+        using var cts = new CancellationTokenSource();
+        var files = Enumerable.Range(0, 200)
+            .Select(_ => TestData.ViewModel("tone.wav", fileSize: 125_000, fullPath: path))
+            .ToList();
+
+        await Should.NotThrowAsync(() => _engine.HydrateVideoMetadataAsync(CancelAfter(files, 3, cts), cts.Token));
+
+        cts.IsCancellationRequested.ShouldBeTrue();
+        files.Count(f => f.Duration is not null).ShouldBeLessThan(files.Count);
+    }
+
+    // Simulates the user pressing Stop once the first few files have been handed out.
+    private static IEnumerable<FileViewModel> CancelAfter(IEnumerable<FileViewModel> files, int count, CancellationTokenSource cts)
+    {
+        int handedOut = 0;
+        foreach (var file in files)
+        {
+            if (handedOut++ == count)
+                cts.Cancel();
+            yield return file;
+        }
     }
 
     private static void WriteSilentWav(string path, int sampleRate, int seconds)
