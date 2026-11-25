@@ -11,8 +11,9 @@ Use this file only for Claude Code–specific workflow.
   so Claude Code would otherwise skip AGENTS.md. Keep the import on the first line.
 - The shell is Windows. Use PowerShell or Git Bash syntax, and always quote paths that contain
   `DriveCrawl Win32 App`.
-- When you verify a change, build with `dotnet build "DriveCrawl Win32 App.slnx"` and read the warnings.
-  The task isn't done if the build adds new warnings.
+- When you verify a change, build with `dotnet build "DriveCrawl Win32 App.slnx"` and run
+  `dotnet test --solution "DriveCrawl Win32 App.slnx"`. The task isn't done if the build adds new
+  warnings or any test fails.
 - Do not launch the app to "check" UI changes unless asked. It needs a populated
   `Database/MediaLibrary.db` and real drives.
 - Do not read, copy or modify `Database/MediaLibrary.db` in place. To inspect it, copy it to a temp
