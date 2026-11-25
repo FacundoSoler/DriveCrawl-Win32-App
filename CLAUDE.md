@@ -1,0 +1,22 @@
+@AGENTS.md
+
+# Claude Code notes
+
+AGENTS.md above is the shared source of truth for every coding agent. Put project facts there.
+Use this file only for Claude Code–specific workflow.
+
+- `D:\DEV PROJECTS\CLAUDE.md` (the parent directory) also loads and holds the same coding standards.
+  If they ever conflict, this repo's AGENTS.md wins.
+- Claude Code reads AGENTS.md only through the `@AGENTS.md` import above. A parent CLAUDE.md exists,
+  so Claude Code would otherwise skip AGENTS.md. Keep the import on the first line.
+- The shell is Windows. Use PowerShell or Git Bash syntax, and always quote paths that contain
+  `DriveCrawl Win32 App`.
+- When you verify a change, build with `dotnet build "DriveCrawl Win32 App.slnx"` and read the warnings.
+  The task isn't done if the build adds new warnings.
+- Do not launch the app to "check" UI changes unless asked. It needs a populated
+  `Database/MediaLibrary.db` and real drives.
+- Do not read, copy or modify `Database/MediaLibrary.db` in place. To inspect it, copy it to a temp
+  directory first. Never stage or commit it.
+- Git: branch off `main` as `feature/<name>`, commit there, and stop. The maintainer creates and merges
+  PRs manually unless they ask otherwise.
+- Personal or machine-specific notes go in `CLAUDE.local.md`, which is gitignored. Don't put them here.
