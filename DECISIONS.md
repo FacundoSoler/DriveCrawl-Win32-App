@@ -82,7 +82,7 @@ There are no broad interface layers or rewrites.
 **Reference:** [options page](https://claude.ai/artifact/NP578UccjN1E23LmBLypPA) (private).
 
 ## D-008 · Git workflow: feature branches, maintainer merges
-**Date:** 2026-11-25 · **Status:** Accepted
+**Date:** 2026-11-25 · **Status:** Superseded by D-010
 **Decision:** Agents work on `feature/<name>` branches and push them. The maintainer opens and merges PRs manually. PR descriptions are a few bullets of core changes; the detail lives in the commits.
 **Why:** the maintainer keeps control of what reaches `main`.
 
@@ -96,3 +96,12 @@ There are no broad interface layers or rewrites.
 **Why:**
 - Overlapping locations make each file look like its own duplicate, so "Delete selected" could permanently remove the only copy.
 - The link and the automatic first-run opening make the feature easy to find, and give new users a guided first step.
+
+## D-010 · Agents open PRs; merged branches delete themselves
+**Date:** 2026-11-25 · **Status:** Accepted · Supersedes D-008
+**Decision:**
+- Agents branch from the latest `main`, push, and open the PR themselves (`gh pr create`) with a short description.
+- The maintainer reviews and merges; agents never merge.
+- GitHub's "Automatically delete head branches" is on, and `fetch.prune` is on locally, so merged branches disappear.
+
+**Why:** with several branches active it was hard to see what needed attention. Now the Pull requests tab is the single to-do list, and merged work cleans itself up.

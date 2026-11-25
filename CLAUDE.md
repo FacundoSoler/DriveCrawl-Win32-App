@@ -18,6 +18,6 @@ Use this file only for Claude Code–specific workflow.
   `%LocalAppData%\DriveCrawl\settings.json` into their real profile.
 - Never modify the user's real library (`MediaLibrary.db` in either location) or `settings.json`.
   To inspect the library, copy it to a temp directory first. Never stage or commit any `.db` file.
-- Git: branch off `main` as `feature/<name>`, commit there, and stop. The maintainer creates and merges
-  PRs manually unless they ask otherwise.
+- Git: work in a worktree, branch off the latest `main`, push, then open the PR with `gh pr create`.
+  Never merge. End the report with a table of open PRs and the suggested merge order.
 - Personal or machine-specific notes go in `CLAUDE.local.md`, which is gitignored. Don't put them here.

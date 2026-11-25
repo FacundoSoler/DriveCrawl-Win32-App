@@ -165,6 +165,10 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
 
 ## Commits and PRs
 
-- Never push to `main`. Work on `feature/<short-name>` branches. The maintainer opens and merges PRs.
+- Never push to `main`, and never merge a PR. Merging is the maintainer's call.
+- Branch from the latest `main` as `feature/<name>`, `fix/<name>` or `docs/<name>`. Use one branch per PR, and avoid stacking branches.
+- When a chunk of work is pushed and ready, open its PR with `gh pr create --base main`.
+  The description is a few bullets of core changes plus a one-line testing note.
+- GitHub deletes merged branches automatically, and `fetch.prune` is on. Don't keep merged branches around.
 - Keep commits focused. Write messages in the imperative mood ("Add bitrate filter").
 - Before you finish, run `dotnet build "DriveCrawl Win32 App.slnx"` and `dotnet test --solution "DriveCrawl Win32 App.slnx"`.
