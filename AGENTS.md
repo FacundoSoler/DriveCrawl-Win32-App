@@ -82,7 +82,7 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
   - `SearchEngine.Search` walks the file system live with `Directory.EnumerateFiles`.
   - Video metadata (TagLib) loads afterwards in the background through the returned `hydrationTask`.
   - Thumbnails load separately through `ThumbnailManager` → `ShellThumbnailService` (COM).
-- The database is read in one place only: `DatabaseService.GetFolders()` reads `WatchedFolders`.
+- The database is queried in one place only: `DatabaseService.GetFolders()` reads `WatchedFolders`.
   - Search does **not** use the DB index. The `Files`, `Tags` and `FileTags` tables exist in the schema but nothing uses them.
 - File location and namespace don't always match. Check the namespace before you add `using`s:
   - `SearchEngine.cs` is at the root but in namespace `DriveCrawl_Win32_App.Services`.
@@ -104,22 +104,25 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
 
 ## Database
 
-- File: `Database/MediaLibrary.db` (SQLite). It is **gitignored and not in the repo**. A fresh clone has no DB.
-- Runtime path: `<exe dir>\Database\MediaLibrary.db`. The csproj copies it to the output with `CopyToOutputDirectory=Always`,
-  so every build overwrites the runtime copy.
-- There is no code that creates or migrates the schema. If the file is missing, `Microsoft.Data.Sqlite` creates an empty
-  DB and the app fails with `no such table: WatchedFolders`.
-- Minimal schema the app needs:
-  ```sql
-  CREATE TABLE WatchedFolders (
-    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    Path TEXT NOT NULL UNIQUE,
-    IsExternal INTEGER DEFAULT 0,
-    Priority INTEGER DEFAULT 1);
-  ```
-- Never commit the `.db` file. It contains the user's local folder paths.
-- Do not change the schema by hand without also adding a versioned migration or script.
-  The migration strategy (EF Core migrations or versioned SQL scripts) has not been decided yet.
+- SQLite, accessed only through Dapper on Microsoft.Data.Sqlite. The `.db` file is never in the repo.
+  It holds the user's local folder paths, so never commit it.
+- **Schema as code:** versioned scripts in `Data/Migrations/NNNN_description.sql` are embedded in the assembly.
+  - At startup, `App.OnStartup` calls `DatabaseInitializer`, which runs `SchemaMigrator`.
+  - The migrator applies every script above `PRAGMA user_version`, one transaction each, then stamps the new version.
+- **To change the schema:** add the next `NNNN_*.sql`. Never edit a script that has already shipped.
+  - Versions must be sequential starting at 1.
+  - SQLite can't alter constraints in place, so a column or constraint change needs a table rebuild script.
+  - Scripts contain schema only. No seed or personal data.
+- **Foreign keys:** `DatabaseLocation.BuildConnectionString` turns them on for every connection.
+  Build connection strings through it so the `ON DELETE CASCADE` rules keep working.
+- **Location:** the user chooses where the library lives.
+  - Default: `<exe dir>\Database\MediaLibrary.db`.
+  - Alternative: `%LocalAppData%\DriveCrawl\MediaLibrary.db`.
+  - The choice is saved in `%LocalAppData%\DriveCrawl\settings.json`. Change it from the status-bar **Library** button.
+  - All path logic lives in `DataLocationService` and `DataLocationPaths`. Never hard-code a DB path elsewhere.
+- The app refuses a database whose `user_version` is newer than its own scripts.
+- Search does not use `Files`, `Tags` or `FileTags` yet. Only `WatchedFolders` is read.
+- There is no UI to add watched folders yet. A fresh library starts empty.
 
 ## Gotchas
 
