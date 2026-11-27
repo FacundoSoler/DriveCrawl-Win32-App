@@ -114,3 +114,14 @@ There are no broad interface layers or rewrites.
 - The agent never deletes the maintainer's current branch or branches it didn't create.
 
 **Why:** GitHub's auto-delete (D-010) only removes the remote branch. Git never deletes local branches, and branches from agent worktrees pile up in the maintainer's repo.
+
+## D-012 · Local-only features live on `local/*` branches
+**Date:** 2026-11-26 · **Status:** Accepted · Exception to D-010
+**Decision:**
+- A feature the maintainer wants only on their own machine goes on a `local/<name>` branch. It has no upstream, is never pushed and gets no PR.
+- An unversioned `.git/hooks/pre-push` hook refuses any push of a `local/*` branch.
+- Agents build these branches in a worktree, then detach the worktree from the branch before finishing. The maintainer can then switch their normal folder to the branch and test it right away.
+
+**Why:**
+- `branch.<name>.pushRemote = no_push` only stops a plain `git push`. Tools that name the remote, such as GitHub Desktop's "Publish branch", get past it. The hook blocks every path.
+- Git checks a branch out in only one folder. An agent that left the branch checked out in its worktree blocked the maintainer from testing it, and its locked session couldn't fix that from the main folder.
