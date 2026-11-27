@@ -170,5 +170,10 @@ These rules also live in `.github/copilot-instructions.md`. Keep both in sync.
 - When a chunk of work is pushed and ready, open its PR with `gh pr create --base main`.
   The description is a few bullets of core changes plus a one-line testing note.
 - GitHub deletes merged branches automatically, and `fetch.prune` is on. Don't keep merged branches around.
+- **Local-only branches** (D-012): when the maintainer wants a feature that never leaves their machine, use `local/<name>`.
+  - Branch from the latest `main`, then remove the upstream with `git branch --unset-upstream`.
+  - Commit, but never push it, open a PR for it, or describe it in these docs.
+  - An unversioned `.git/hooks/pre-push` hook refuses pushes of `local/*`. Never remove it or bypass it with `--no-verify`.
+  - Never delete a `local/*` branch during cleanup. It has no upstream and is never merged.
 - Keep commits focused. Write messages in the imperative mood ("Add bitrate filter").
 - Before you finish, run `dotnet build "DriveCrawl Win32 App.slnx"` and `dotnet test --solution "DriveCrawl Win32 App.slnx"`.

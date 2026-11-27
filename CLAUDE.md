@@ -24,4 +24,13 @@ Use this file only for Claude Code–specific workflow.
   is removed. At the start of each task, run `git fetch --prune`, then delete the local branches you created.
   Only delete a branch whose upstream is `[gone]` and which `git merge-base --is-ancestor <branch> origin/main` confirms is merged.
   Never delete the branch the maintainer has checked out, or a branch you didn't create.
+- Local-only branches (`local/<name>`, see AGENTS.md and D-012): build them in a worktree as usual, but hand the
+  branch back so the maintainer can test it from their normal folder:
+  1. Commit, then run `git switch --detach` in the worktree. Git checks a branch out in only one folder, so this frees it.
+  2. Tell the maintainer to switch their normal folder to the branch and rebuild. In GitHub Desktop they must select
+     the *main* worktree first, then the branch, or the switch lands in your worktree instead.
+  - A worktree-isolated session can't run git against the main checkout, and neither can `!` commands the maintainer
+    types into it. Never hand them `git -C "<main repo>"` commands from inside a worktree.
+  - Never call `ExitWorktree` with `remove` on a local-only branch. It deletes the branch, which exists nowhere else.
+  - If `.git/hooks/pre-push` is missing, tell the maintainer before committing. A worktree session can't write `.git/hooks`.
 - Personal or machine-specific notes go in `CLAUDE.local.md`, which is gitignored. Don't put them here.
